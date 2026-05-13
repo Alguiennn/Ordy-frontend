@@ -1,0 +1,7 @@
+{
+  "name": "ordy-master-root",
+  "scripts": {
+    "install:all": "npm install --prefix bookings-frontend",
+    "dev:front": "npm run dev --prefix bookings-frontend"
+  }
+}
