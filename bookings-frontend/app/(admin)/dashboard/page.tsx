@@ -1,4 +1,5 @@
 import { museoModerno } from '@/lib/fonts';
+import TypewriterGreeting from '@/components/TypewriterGreeting';
 
 type DashboardBookingStatus = "pending" | "confirmed" | "paid";
 
@@ -80,10 +81,12 @@ export default function DashboardPage() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Hola de nuevo :&#41;</h2>
-          <p>Aquí tienes lo que está pasando en <span className={museoModerno.className}>Ordy</span> hoy.</p>
+          <TypewriterGreeting />
+    
+          <p>
+            Aquí tienes lo que está pasando en{' '} <span className={museoModerno.className}>Ordy</span> hoy.
+          </p>
         </div>
-
         <button className="primary-btn" type="button">
           Export report
         </button>
