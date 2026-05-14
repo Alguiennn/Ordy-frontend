@@ -57,7 +57,7 @@ export default function PaymentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<number | ''>('');
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<(typeof paymentMethods)[number]>('Tarjeta');
+  const [method, setMethod] = useState<typeof paymentMethods[number]>('Tarjeta');
   const [status, setStatus] = useState<PaymentStatus>('paid');
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(false);
@@ -145,8 +145,8 @@ export default function PaymentsPage() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Payments</h2>
-          <p>Seguimiento de cobros realizados y pendientes.</p>
+          <h2>Cobros</h2>
+          <p>Registra pagos asociados a reservas y guarda los datos en database.sqlite.</p>
         </div>
 
         <button className="primary-btn" type="button" onClick={() => setShowForm((open) => !open)}>
@@ -166,7 +166,8 @@ export default function PaymentsPage() {
                 Reserva:
                 <select
                   value={selectedBookingId}
-                  onChange={(event) => setSelectedBookingId(Number(event.target.value) || '')}>
+                  onChange={(event) => setSelectedBookingId(Number(event.target.value) || '')}
+                >
                   <option value="">Selecciona una reserva</option>
                   {bookings.map((booking) => (
                     <option key={booking.id} value={booking.id}>
@@ -191,23 +192,20 @@ export default function PaymentsPage() {
               <label>
                 Método de pago:
                 <select
-                  value={method}
-                  onChange={(event) =>
-                    setMethod(event.target.value as (typeof paymentMethods)[number])
-                  }>
-                  {paymentMethods.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                value={method}
+                onChange={(event) => setMethod(event.target.value as typeof paymentMethods[number])}
+              >
+                {paymentMethods.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
               </label>
 
               <label>
                 Estado:
-                <select
-                  value={status}
-                  onChange={(event) => setStatus(event.target.value as PaymentStatus)}>
+                <select value={status} onChange={(event) => setStatus(event.target.value as PaymentStatus)}>
                   {paymentStatusOptions.map((option) => (
                     <option key={option} value={option}>
                       {option === 'paid' ? 'Pagado' : 'Pendiente'}
@@ -235,59 +233,43 @@ export default function PaymentsPage() {
 
       <section className="kpi-grid">
         <KpiCard
-          title="Cobrado hoy"
+          title="Total cobrado"
           value={formatCurrency(totalPaid)}
-          subtitle={`${payments.filter((payment) => payment.status === 'paid').length} operaciones registradas`}
+          subtitle={`${payments.filter((payment) => payment.status === 'paid').length} pagos`}
           variant="positive"
         />
         <KpiCard
-          title="Pendiente"
-          value={formatCurrency(
-            payments
-              .filter((p) => p.status === 'pending')
-              .reduce((sum, p) => sum + p.amount, 0),
-          )}
-          subtitle={`${pendingCount} cobro${pendingCount !== 1 ? 's' : ''} por revisar`}
+          title="Cobros pendientes"
+          value={`${pendingCount}`}
+          subtitle="Pagos por revisar"
           variant="warning"
         />
         <KpiCard
-          title="Método más usado"
-          value={
-            (() => {
-              const counts = payments.reduce<Record<string, number>>((acc, p) => {
-                acc[p.method] = (acc[p.method] ?? 0) + 1;
-                return acc;
-              }, {});
-              return Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] ?? '—';
-            })()
-          }
-          subtitle="Mayor volumen del día"
+          title="Reservas disponibles"
+          value={`${bookings.length}`}
+          subtitle="Reservas activas"
         />
         <KpiCard
-          title="Conversión"
-          value={
-            payments.length > 0
-              ? `${Math.round(
-                  (payments.filter((p) => p.status === 'paid').length / payments.length) * 100,
-                )}%`
-              : '—'
-          }
-          subtitle="Cobros cerrados hoy"
+          title="Último cobro"
+          value={payments[0] ? formatCurrency(payments[0].amount) : '0 €'}
+          subtitle={payments[0] ? `Reserva #${payments[0].bookingId}` : 'Sin cobros'}
         />
       </section>
 
       <section className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">Listado de cobros</h3>
-          <span style={{ color: '#6b7280', fontSize: 14 }}>{payments.length} resultados</span>
+          <span style={{ color: '#6b7280', fontSize: 14 }}>
+            {payments.length} resultados
+          </span>
         </div>
 
         <table className="data-table">
           <thead>
             <tr>
               <th>ID</th>
-              <th>Cliente</th>
-              <th>Comercio</th>
+              <th>Reserva</th>
+              <th>Servicio</th>
               <th>Importe</th>
               <th>Método</th>
               <th>Fecha</th>
@@ -298,8 +280,8 @@ export default function PaymentsPage() {
             {payments.map((payment) => (
               <tr key={payment.id}>
                 <td style={{ fontWeight: 600 }}>{payment.id}</td>
-                <td>{payment.booking?.clientName ?? '—'}</td>
-                <td>{payment.booking?.businessName ?? payment.booking?.serviceName ?? '—'}</td>
+                <td>#{payment.bookingId}</td>
+                <td>{payment.booking?.serviceName || 'Sin reserva'}</td>
                 <td>{formatCurrency(payment.amount)}</td>
                 <td>{payment.method}</td>
                 <td>{new Date(payment.createdAt).toLocaleDateString('es-ES')}</td>
