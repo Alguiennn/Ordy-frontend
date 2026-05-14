@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import TypewriterGreeting from '@/components/TypewriterGreeting';
+
 import type {
   Booking,
   BookingStatus,
@@ -234,7 +236,7 @@ export default function BookingsClient({
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Bookings list</h2>
+          <TypewriterGreeting messages={['Organiza tus próximas citas.', 'Esto es todo lo que tienes para hoy.']} loop={false} />
           <p>Gestión de reservas conectada con la API.</p>
         </div>
 

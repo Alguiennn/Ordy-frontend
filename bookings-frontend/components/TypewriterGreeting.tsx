@@ -3,27 +3,44 @@
 import React from 'react';
 import Typewriter from 'typewriter-effect';
 
-const TypewriterGreeting: React.FC = () => {
+interface TypewriterProps {
+  messages: string[];
+  className?: string;
+  loop?: boolean;
+  delay?: number;
+  pause?: number;
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'span'; // Propiedad para elegir la etiqueta
+}
+
+const TypewriterGreeting: React.FC<TypewriterProps> = ({ 
+  messages, 
+  className = "text-2xl font-bold text-gray-800", 
+  loop = false,
+  delay = 70,
+  pause = 2500,
+  as: Component = 'h2' // Por defecto será un h2
+}) => {
   return (
-    /* Manteniendo tus clases de Tailwind */
-    <h2 className="text-2xl font-bold text-gray-800 min-h-[35px]">
+    /* Aquí usamos 'Component' que por defecto es h2 */
+    <Component className={className} style={{ minHeight: '1.2em' }}>
       <Typewriter
         onInit={(typewriter) => {
-          typewriter
-            .typeString('Hola de nuevo :)')
-            .pauseFor(2500)
-            .deleteAll()
-            .typeString('Echa un vistazo a todas las novedades de hoy')
-            .start();
+          messages.forEach((msg, index) => {
+            typewriter.typeString(msg);
+            if (index < messages.length - 1 || loop) {
+              typewriter.pauseFor(pause).deleteAll();
+            }
+          });
+          typewriter.start();
         }}
         options={{
           autoStart: true,
-          loop: false,
+          loop: loop,
+          delay: delay,
           cursor: '|',
-          delay: 70,
         }}
       />
-    </h2>
+    </Component>
   );
 };
 

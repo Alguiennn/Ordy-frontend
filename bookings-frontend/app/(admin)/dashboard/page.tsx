@@ -81,7 +81,7 @@ export default function DashboardPage() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <TypewriterGreeting />
+          <TypewriterGreeting messages={['Hola de nuevo :)', 'Echa un vistazo a las novedades.']} loop={false} />
     
           <p>
             Aquí tienes lo que está pasando en{' '} <span className={museoModerno.className}>Ordy</span> hoy.

@@ -1,3 +1,5 @@
+import TypewriterGreeting from '@/components/TypewriterGreeting';
+
 type PaymentStatus = "pending" | "paid";
 
 type Payment = {
@@ -92,7 +94,12 @@ export default function PaymentsPage() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Payments</h2>
+          <TypewriterGreeting 
+            as="h2"
+            messages={['Tus ingresos al día.', 'Controla cada transacción.']} 
+            loop={false}
+            pause={2500}
+            />
           <p>Seguimiento de cobros realizados y pendientes.</p>
         </div>
 
