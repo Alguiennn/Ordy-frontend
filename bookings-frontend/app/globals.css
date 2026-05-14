@@ -28,6 +28,33 @@
   box-sizing: border-box;
 }
 
+html {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+body,
+.admin-header-top,
+.admin-sidebar,
+.kpi-card,
+.section-card,
+.surface-card,
+.page-hero,
+.customer-card,
+.info-box,
+.input,
+.select,
+.secondary-btn,
+.filter-pill,
+.customer-tag,
+.admin-header {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
 html,
 body {
   margin: 0;
@@ -88,21 +115,19 @@ body {
 .admin-sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
 }
 
 .admin-sidebar__link {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
   border-radius: 14px;
-  padding: 8px 12px ;
+  padding: 12px 14px;
   font-size: 14px;
   color: #334155;
   background: transparent;
-  transition: all 0.4s ease;
-  width: 79%;
-  text-align: center;
+  transition: all 0.2s ease;
 }
 
 .admin-sidebar__link:hover {
@@ -467,6 +492,7 @@ body {
   padding: 6px 10px;
   border-radius: 10px;
   font-size: 13px;
+  background-color: var(--primary-soft);
 }
 
 .customer-next {
@@ -612,3 +638,150 @@ body {
   opacity: 0.65;
   cursor: not-allowed;
 }
+
+.admin-header-top {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 24px;
+}
+
+.admin-header-top__title {
+  margin: 0;
+  font-size: 28px;
+  color: var(--text);
+}
+
+.admin-header-top__subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+[data-theme="dark"] {
+  --bg: #0f1117;
+  --surface: #161b27;
+  --surface-2: #1e2535;
+  --border: #1f2937;
+  --border-strong: #374151;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --muted-2: #64748b;
+  --primary: #f1f5f9;
+  --primary-soft: #1e3a8a;
+  --accent: #3b82f6;
+  --success-bg: #052e16;
+  --success-text: #4ade80;
+  --warning-bg: #431407;
+  --warning-text: #fb923c;
+  --paid-bg: #1e3a8a;
+  --paid-text: #93c5fd;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] body {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .header {
+  background: rgba(22, 27, 39, 0.85);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .admin-sidebar {
+  background: rgba(22, 27, 39, 0.95);
+  border-right-color: var(--border);
+}
+
+[data-theme="dark"] .admin-header {
+  background: rgba(22, 27, 39, 0.85);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .admin-header {
+  background: rgba(22, 27, 39, 0.85);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .kpi-card,
+[data-theme="dark"] .section-card,
+[data-theme="dark"] .surface-card,
+[data-theme="dark"] .page-hero {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .customer-card,
+[data-theme="dark"] .info-box {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .input,
+[data-theme="dark"] .select {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+[data-theme="dark"] .primary-btn {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+[data-theme="dark"] .secondary-btn {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+[data-theme="dark"] .admin-sidebar__link {
+  color: var(--text);
+}
+
+[data-theme="dark"] .admin-sidebar__link:hover {
+  background: var(--surface-2);
+}
+
+[data-theme="dark"] .admin-sidebar__link--active {
+  background: #1e3a8a;
+  color: #bfdbfe;
+}
+
+[data-theme="dark"] .filter-pill {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+[data-theme="dark"] .modal-card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .modal-title {
+  color: var(--text);
+}
+
+.theme-toggle {
+  position: fixed;
+  bottom: 640px;
+  right: 24px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px var(--border-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 32px rgba(48, 0, 240, 0.858);
+}   
