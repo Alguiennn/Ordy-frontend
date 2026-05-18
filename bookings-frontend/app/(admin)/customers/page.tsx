@@ -150,7 +150,7 @@ const CustomerModal = ({ mode, initial, onClose, onSave }: { mode: "new" | "edit
           {FORM_FIELDS.map(({ field, label, placeholder }) => (
             <div key={field} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <label style={STYLES.label}>{label}</label>
-              <input placeholder={placeholder} value={form[field]} onChange={(e) => { setForm((f) => ({ ...f, [field]: e.target.value })); setErrors((er) => ({ ...er, [field]: "" })); }} 
+              <input placeholder={placeholder} value={form[field]} onChange={(e) => { setForm((f) => ({ ...f, [field]: e.target.value })); setErrors((er) => ({ ...er, [field]: "" })); }}
                 style={STYLES.input} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--accent)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border)")} />
               {errors[field] && <span style={STYLES.error}>{errors[field]}</span>}
             </div>
@@ -263,7 +263,66 @@ const HistoryModal = ({ customer, onClose, onAddBooking }: { customer: Customer;
   );
 };
 
-const CustomerCard = ({ customer, onEdit, onDelete, onHistory }: { customer: Customer; onEdit: (c: Customer) => void; onDelete: (id: string) => void; onHistory: (c: Customer) => void }) => (
+// ─── Confirm Delete Modal ─────────────────────────────────────────────────────
+const ConfirmDeleteModal = ({ customer, onClose, onConfirm }: { customer: Customer; onClose: () => void; onConfirm: () => void }) => (
+  <Overlay onClose={onClose}>
+    <ModalBox width={400} onClick={(e) => e.stopPropagation()}>
+      {/* Header */}
+      <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#FECACA", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "1.2rem" }}>
+          🗑️
+        </div>
+        <div>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--text)" }}>Eliminar cliente</p>
+          <p style={{ margin: 0, fontSize: "0.78rem", color: "#ef4444" }}>Esta acción no se puede deshacer</p>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: "20px 24px" }}>
+        <p style={{ margin: "0 0 12px", fontSize: "0.88rem", color: "var(--muted)" }}>
+          Estás a punto de eliminar a:
+        </p>
+
+        {/* Customer preview */}
+        <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "var(--radius-sm)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#FECACA", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "#991B1B", flexShrink: 0 }}>
+            {getInitials(customer.name)}
+          </div>
+          <div>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: "0.92rem", color: "#991B1B" }}>{customer.name}</p>
+            <p style={{ margin: "2px 0 0", fontSize: "0.78rem", color: "#B91C1C" }}>{customer.business}</p>
+          </div>
+        </div>
+
+        {/* Warning note */}
+        {customer.history.length > 0 && (
+          <div style={{ marginTop: 12, display: "flex", alignItems: "flex-start", gap: 8, background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: "var(--radius-sm)", padding: "10px 12px" }}>
+            <span style={{ fontSize: "0.9rem", flexShrink: 0, marginTop: 1 }}>⚠️</span>
+            <p style={{ margin: 0, fontSize: "0.82rem", color: "#92400E", lineHeight: 1.5 }}>
+              También se eliminarán sus <strong>{customer.history.length} reserva{customer.history.length !== 1 ? "s" : ""}</strong> del historial permanentemente.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: "14px 24px 20px", borderTop: "1px solid var(--border)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <button onClick={onClose} className="secondary-btn">Cancelar</button>
+        <button
+          onClick={onConfirm}
+          style={{ background: "#DC2626", color: "#fff", border: "none", borderRadius: "var(--radius-sm)", padding: "8px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#B91C1C")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#DC2626")}
+        >
+          🗑️ Sí, eliminar
+        </button>
+      </div>
+    </ModalBox>
+  </Overlay>
+);
+
+const CustomerCard = ({ customer, onEdit, onDelete, onHistory }: { customer: Customer; onEdit: (c: Customer) => void; onDelete: (c: Customer) => void; onHistory: (c: Customer) => void }) => (
   <div className="surface-card" style={{ position: "relative", cursor: "pointer", padding: "18px", transition: "box-shadow 0.2s, transform 0.15s" }} onClick={() => onHistory(customer)}
     onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
     onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.transform = ""; }}>
@@ -280,7 +339,7 @@ const CustomerCard = ({ customer, onEdit, onDelete, onHistory }: { customer: Cus
       <div style={{ display: "flex", gap: 6 }}>
         <button title="Editar" onClick={(e) => { e.stopPropagation(); onEdit(customer); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: "0.88rem", padding: "4px 5px", borderRadius: "5px" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}>✏️</button>
-        <button title="Eliminar" onClick={(e) => { e.stopPropagation(); onDelete(customer.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: "0.88rem", padding: "4px 5px", borderRadius: "5px" }}
+        <button title="Eliminar" onClick={(e) => { e.stopPropagation(); onDelete(customer); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: "0.88rem", padding: "4px 5px", borderRadius: "5px" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}>🗑️</button>
       </div>
     </div>
@@ -297,7 +356,7 @@ const Toast = ({ message }: { message: string }) => (
   <div style={{ position: "fixed", bottom: 24, right: 24, background: "var(--primary)", color: "#fff", padding: "10px 18px", borderRadius: "var(--radius-sm)", fontSize: "0.88rem", fontWeight: 500, boxShadow: "var(--shadow-md)", zIndex: 999999, display: "flex", alignItems: "center", gap: 8 }}>
     <span>✅</span> {message}
   </div>
-);console.log("");
+);
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function CustomersPage() {
@@ -305,6 +364,7 @@ export default function CustomersPage() {
   const [searchText, setSearchText] = useState("");
   const [filterActive, setFilterActive] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
@@ -329,10 +389,11 @@ export default function CustomersPage() {
     showToast(`Cambios guardados para "${data.name}"`);
   };
 
-  const handleDelete = (id: string) => {
-    const t = customers.find((c) => c.id === id);
-    setCustomers((prev) => prev.filter((c) => c.id !== id));
-    if (t) showToast(`Cliente "${t.name}" eliminado`);
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+    showToast(`Cliente "${deleteTarget.name}" eliminado`);
+    setDeleteTarget(null);
   };
 
   const handleAddBooking = (customerId: string, booking: Booking) => {
@@ -360,13 +421,37 @@ export default function CustomersPage() {
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
-        {displayed.length > 0 ? (displayed.map((c) => <CustomerCard key={c.id} customer={c} onEdit={(c) => setModal({ type: "edit", customer: c })} onDelete={handleDelete} onHistory={(c) => setModal({ type: "history", customer: c })} />))
-          : (<div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 16px", color: "var(--muted)" }}><div style={{ fontSize: "2.5rem", marginBottom: 8 }}>🔍</div><p style={{ fontWeight: 600, marginBottom: 4 }}>Sin resultados</p><p style={{ fontSize: "0.88rem" }}>No hay clientes que coincidan con "{searchText}"</p></div>)}
+        {displayed.length > 0
+          ? displayed.map((c) => (
+              <CustomerCard
+                key={c.id}
+                customer={c}
+                onEdit={(c) => setModal({ type: "edit", customer: c })}
+                onDelete={(c) => setDeleteTarget(c)}
+                onHistory={(c) => setModal({ type: "history", customer: c })}
+              />
+            ))
+          : (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 16px", color: "var(--muted)" }}>
+              <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>🔍</div>
+              <p style={{ fontWeight: 600, marginBottom: 4 }}>Sin resultados</p>
+              <p style={{ fontSize: "0.88rem" }}>No hay clientes que coincidan con "{searchText}"</p>
+            </div>
+          )}
       </section>
 
       {modal === "new" && <CustomerModal mode="new" onClose={() => setModal(null)} onSave={handleSaveNew} />}
       {modal && modal !== "new" && modal.type === "edit" && <CustomerModal mode="edit" initial={modal.customer} onClose={() => setModal(null)} onSave={handleSaveEdit} />}
       {historyCustomer && <HistoryModal customer={historyCustomer} onClose={() => setModal(null)} onAddBooking={handleAddBooking} />}
+
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          customer={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+
       {toast && <Toast message={toast} />}
     </div>
   );
