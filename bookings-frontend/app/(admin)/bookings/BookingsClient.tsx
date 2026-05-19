@@ -392,7 +392,7 @@ export default function BookingsClient({
                 className="input"
                 type="number"
                 min={1}
-                value={editForm.customerId}
+                value={editForm.customerId ?? ""}
                 onChange={(e) =>
                   updateEditForm("customerId", Number(e.target.value))
                 }
@@ -403,7 +403,7 @@ export default function BookingsClient({
                 className="input"
                 type="number"
                 min={1}
-                value={editForm.businessId}
+                value={editForm.businessId ?? ""}
                 onChange={(e) =>
                   updateEditForm("businessId", Number(e.target.value))
                 }

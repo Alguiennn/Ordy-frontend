@@ -5,16 +5,28 @@ import {
   Booking,
   CreatePaymentDto,
   createPayment,
+  deletePayment,
   getAppointments,
+  getAppointment,
+  getCustomers,
+  getBusinesses,
   getPayments,
   Payment,
   PaymentStatus,
+  updatePayment,
 } from '@/lib/api';
 
 const paymentMethods = ['Tarjeta', 'Efectivo', 'Bizum', 'Transferencia'] as const;
 const paymentStatusOptions: PaymentStatus[] = ['paid', 'pending'];
 
 type FormMode = 'create' | 'edit';
+
+function formatDateSafe(dateStr?: string) {
+  if (!dateStr) return 'Sin fecha';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 'Sin fecha';
+  return d.toLocaleDateString('es-ES');
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENTS
@@ -234,13 +246,13 @@ function ConfirmDeleteModal({
             {/* Details row */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <p style={{ margin: 0, fontSize: '0.82rem', color: '#B91C1C' }}>
-                Reserva <strong>#{payment.bookingId}</strong>
+                Reserva <strong>{payment.bookingId ? `#${payment.bookingId}` : 'Sin reserva'}</strong>
                 {payment.booking?.serviceName ? ` — ${payment.booking.serviceName}` : ''}
               </p>
               <p style={{ margin: 0, fontSize: '0.78rem', color: '#B91C1C' }}>
                 ID cobro: <strong>#{payment.id}</strong>
                 {' · '}
-                {new Date(payment.createdAt).toLocaleDateString('es-ES')}
+                {formatDateSafe(payment.date)}
                 {' · '}
                 {payment.status === 'paid' ? 'Pagado' : 'Por cobrar'}
               </p>
@@ -333,6 +345,12 @@ function PaymentFormModal({
   onAmountChange,
   onMethodChange,
   onStatusChange,
+  customers,
+  businesses,
+  selectedCustomerId,
+  selectedBusinessId,
+  onCustomerChange,
+  onBusinessChange,
   onSubmit,
   onClose,
 }: {
@@ -345,10 +363,16 @@ function PaymentFormModal({
   amount: string;
   method: typeof paymentMethods[number];
   status: PaymentStatus;
+  customers: any[];
+  businesses: any[];
+  selectedCustomerId: number | '';
+  selectedBusinessId: number | '';
   onBookingChange: (value: number | '') => void;
   onAmountChange: (value: string) => void;
   onMethodChange: (value: typeof paymentMethods[number]) => void;
   onStatusChange: (value: PaymentStatus) => void;
+  onCustomerChange: (value: number | '') => void;
+  onBusinessChange: (value: number | '') => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
 }) {
@@ -429,6 +453,34 @@ function PaymentFormModal({
                   <option key={booking.id} value={booking.id}>
                     {`#${booking.id} — ${booking.serviceName} (${booking.date} ${booking.time})`}
                   </option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#111' }}>Cliente *</span>
+              <select
+                value={selectedCustomerId}
+                onChange={(e) => onCustomerChange(Number(e.target.value) || '')}
+                style={{ padding: '10px 12px', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', color: '#111' }}
+              >
+                <option value="">Selecciona un cliente</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#111' }}>Negocio *</span>
+              <select
+                value={selectedBusinessId}
+                onChange={(e) => onBusinessChange(Number(e.target.value) || '')}
+                style={{ padding: '10px 12px', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', color: '#111' }}
+              >
+                <option value="">Selecciona un negocio</option>
+                {businesses.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
             </label>
@@ -574,6 +626,8 @@ function PaymentFormModal({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PaymentsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [businesses, setBusinesses] = useState<any[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [formMode, setFormMode] = useState<FormMode | null>(null);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -599,16 +653,65 @@ export default function PaymentsPage() {
     setMethod('Tarjeta');
     setStatus('paid');
     setFeedback('');
+    // default selected customer/business
+    if (customers.length > 0) setSelectedCustomerId(customers[0].id);
+    if (businesses.length > 0) setSelectedBusinessId(businesses[0].id);
+  }
+
+  function handleBookingChange(value: number | '') {
+    setSelectedBookingId(value);
+    const booking = bookings.find((b) => b.id === value);
+    if (booking) {
+      setSelectedCustomerId(booking.customerId);
+      setSelectedBusinessId(booking.businessId);
+    }
+  }
+
+  function findMatchingBooking(payment: Payment) {
+    return bookings.find((booking) => {
+      const bookingDate = new Date(`${booking.date}T${booking.time || '00:00'}Z`);
+      const paymentDate = new Date(payment.date);
+      return (
+        !Number.isNaN(bookingDate.getTime()) &&
+        !Number.isNaN(paymentDate.getTime()) &&
+        bookingDate.toISOString() === paymentDate.toISOString() &&
+        booking.customerId === payment.customerId &&
+        booking.businessId === payment.businessId
+      );
+    });
   }
 
   function openEditForm(payment: Payment) {
     setFormMode('edit');
     setEditingPayment(payment);
-    setSelectedBookingId(payment.bookingId);
+
+    const matchedBooking = findMatchingBooking(payment);
+    setSelectedBookingId(matchedBooking?.id ?? '');
+
     setAmount(payment.amount.toString());
     setMethod(payment.method as typeof paymentMethods[number]);
     setStatus(payment.status);
     setFeedback('');
+
+    if (payment.customerId) {
+      setSelectedCustomerId(payment.customerId);
+    } else if (payment.customer?.id) {
+      setSelectedCustomerId(payment.customer.id);
+    } else if (matchedBooking) {
+      setSelectedCustomerId(matchedBooking.customerId);
+    } else {
+      setSelectedCustomerId('');
+    }
+
+    if (payment.businessId) {
+      setSelectedBusinessId(payment.businessId);
+    } else if (payment.business?.id) {
+      setSelectedBusinessId(payment.business.id);
+    } else if (matchedBooking) {
+      setSelectedBusinessId(matchedBooking.businessId);
+    } else {
+      setSelectedBusinessId('');
+    }
   }
 
   function closeForm() {
@@ -623,16 +726,82 @@ export default function PaymentsPage() {
 
   async function loadData() {
     try {
-      const [bookingsData, paymentsData] = await Promise.all([getAppointments(), getPayments()]);
+      const [bookingsData, paymentsData, customersData, businessesData] = await Promise.all([
+        getAppointments(),
+        getPayments(),
+        getCustomers(),
+        getBusinesses(),
+      ]);
+
+      const enrichedPayments = paymentsData.map((p) => {
+        if (p.booking?.serviceName) {
+          return p;
+        }
+
+        if (p.date) {
+          try {
+            const normalizedPaymentDate = new Date(p.date).toISOString();
+            const matched = bookingsData.find((b) => {
+              const bookingDate = new Date(`${b.date}T${b.time || '00:00'}Z`);
+              return (
+                !Number.isNaN(bookingDate.getTime()) &&
+                bookingDate.toISOString() === normalizedPaymentDate &&
+                b.customerId === p.customerId &&
+                b.businessId === p.businessId
+              );
+            });
+            if (matched) {
+              return {
+                ...p,
+                bookingId: matched.id,
+                booking: { serviceName: matched.serviceName },
+              };
+            }
+          } catch (e) {
+            // ignore parse errors
+          }
+        }
+
+        return p;
+      });
+
       setBookings(bookingsData);
-      setPayments(paymentsData);
+      setPayments(enrichedPayments);
+      setCustomers(customersData);
+      setBusinesses(businessesData);
     } catch (error) {
       console.error(error);
       setFeedback('Error al cargar datos desde el servidor.');
     }
   }
 
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>('');
+  const [selectedBusinessId, setSelectedBusinessId] = useState<number | ''>('');
+
+  const bookingMap = useMemo(() => new Map(bookings.map((booking) => [booking.id, booking])), [bookings]);
+
   const selectedBooking = bookings.find((booking) => booking.id === selectedBookingId);
+
+  function resolvePaymentBooking(payment: Payment) {
+    if (payment.booking?.serviceName) {
+      return payment.booking;
+    }
+
+    const matchedBooking = findMatchingBooking(payment);
+    if (matchedBooking) {
+      return { serviceName: matchedBooking.serviceName };
+    }
+
+    return undefined;
+  }
+
+  function formatBookingDateTime(payment: Payment) {
+    const dateTime = new Date(payment.date);
+    if (!isNaN(dateTime.getTime())) {
+      return dateTime.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+    }
+    return 'Sin fecha';
+  }
 
   const filteredPayments = useMemo(() => {
     if (!filterStatus) return payments;
@@ -660,11 +829,18 @@ export default function PaymentsPage() {
     }).format(value);
   }
 
+  function formatDateSafe(dateStr?: string) {
+    if (!dateStr) return 'Sin fecha';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Sin fecha';
+    return d.toLocaleDateString('es-ES');
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFeedback('');
 
-    if (!selectedBookingId) {
+    if (formMode === 'create' && !selectedBookingId) {
       setFeedback('Selecciona una reserva de la tabla.');
       return;
     }
@@ -679,49 +855,131 @@ export default function PaymentsPage() {
 
     try {
       if (formMode === 'create') {
-        const paymentData: CreatePaymentDto = {
-          bookingId: selectedBookingId,
+        if (!selectedBookingId) {
+          setFeedback('Selecciona una reserva válida.');
+          return;
+        }
+
+        const bookingFull = await getAppointment(selectedBookingId as number);
+        if (!bookingFull) {
+          setFeedback('No se encontró la reserva seleccionada.');
+          return;
+        }
+
+        const combined = `${bookingFull.date}T${bookingFull.time || '00:00'}Z`;
+        const dt = new Date(combined);
+        if (isNaN(dt.getTime())) {
+          setFeedback('La fecha de la reserva no es válida. Selecciona otra reserva.');
+          return;
+        }
+
+        const customerId = selectedCustomerId !== '' ? Number(selectedCustomerId) : undefined;
+        const businessId = selectedBusinessId !== '' ? Number(selectedBusinessId) : undefined;
+
+        if (customerId === undefined || !Number.isInteger(customerId) || customerId <= 0) {
+          setFeedback('Selecciona un cliente válido.');
+          return;
+        }
+        if (businessId === undefined || !Number.isInteger(businessId) || businessId <= 0) {
+          setFeedback('Selecciona un negocio válido.');
+          return;
+        }
+
+        const payload: any = {
+          date: dt.toISOString(),
+          customerId,
+          businessId,
           amount: parsedAmount,
           method,
           status,
         };
 
-        const newPayment = await createPayment(paymentData);
+        const newPayment = await createPayment(payload);
+        if (!newPayment.booking) {
+          newPayment.booking = { serviceName: bookingFull.serviceName } as any;
+        }
+        newPayment.bookingId = Number(selectedBookingId);
         setPayments((current) => [newPayment, ...current]);
         setFeedback('Cobro guardado en la base de datos.');
         closeForm();
       } else if (formMode === 'edit' && editingPayment) {
-        // Update the payment in the list with the new data
-        // For now, only update locally. Add updatePayment API call when available
-        const updatedPayment: Payment = {
-          ...editingPayment,
-          bookingId: selectedBookingId,
+        const updatePayload: any = {
           amount: parsedAmount,
           method,
           status,
         };
 
+        if (selectedBookingId) {
+          const bookingFull = await getAppointment(selectedBookingId as number);
+          if (!bookingFull) {
+            setFeedback('No se encontró la reserva seleccionada.');
+            return;
+          }
+          const combined = `${bookingFull.date}T${bookingFull.time || '00:00'}Z`;
+          const dt = new Date(combined);
+          if (isNaN(dt.getTime())) {
+            setFeedback('La fecha de la reserva no es válida. Selecciona otra reserva.');
+            return;
+          }
+
+          const customerId = selectedCustomerId !== '' ? Number(selectedCustomerId) : undefined;
+          const businessId = selectedBusinessId !== '' ? Number(selectedBusinessId) : undefined;
+
+          if (customerId === undefined || !Number.isInteger(customerId) || customerId <= 0) {
+            setFeedback('Selecciona un cliente válido.');
+            return;
+          }
+          if (businessId === undefined || !Number.isInteger(businessId) || businessId <= 0) {
+            setFeedback('Selecciona un negocio válido.');
+            return;
+          }
+
+          updatePayload.date = dt.toISOString();
+          updatePayload.customerId = customerId;
+          updatePayload.businessId = businessId;
+        }
+
+        const updatedPayment = await updatePayment(editingPayment.id, updatePayload);
+        const bookingForRow = selectedBookingId
+          ? bookings.find((b) => b.id === selectedBookingId)
+          : findMatchingBooking(editingPayment);
+
+        const mergedPayment = {
+          ...editingPayment,
+          ...updatedPayment,
+          bookingId: selectedBookingId || editingPayment.bookingId,
+          booking:
+            updatedPayment.booking ||
+            (bookingForRow ? { serviceName: bookingForRow.serviceName } : editingPayment.booking),
+        };
+
         setPayments((current) =>
-          current.map((p) => (p.id === editingPayment.id ? updatedPayment : p))
+          current.map((p) => (p.id === editingPayment.id ? mergedPayment : p))
         );
         setFeedback('Cobro actualizado correctamente.');
         closeForm();
-
-        // TODO: Add updatePayment API call to sync with backend
       }
     } catch (error) {
       console.error(error);
-      setFeedback('Error al guardar el cobro. Revisa el servidor.');
+      setFeedback(error instanceof Error ? error.message : String(error) || 'Error al guardar el cobro. Revisa el servidor.');
     } finally {
       setLoading(false);
     }
   }
 
-  function handleConfirmDelete() {
+  async function handleConfirmDelete() {
     if (!deleteTarget) return;
-    setPayments((current) => current.filter((p) => p.id !== deleteTarget.id));
-    setDeleteTarget(null);
-    // TODO: Add deletePayment API call to sync with backend
+
+    try {
+      await deletePayment(deleteTarget.id);
+      setPayments((current) => current.filter((p) => p.id !== deleteTarget.id));
+      setFeedback('Cobro eliminado correctamente.');
+    } catch (error) {
+      console.error(error);
+      setFeedback(error instanceof Error ? error.message : String(error) || 'Error al eliminar el cobro. Revisa el servidor.');
+    } finally {
+      setDeleteTarget(null);
+    }
   }
 
   return (
@@ -749,10 +1007,16 @@ export default function PaymentsPage() {
           amount={amount}
           method={method}
           status={status}
-          onBookingChange={setSelectedBookingId}
+          customers={customers}
+          businesses={businesses}
+          selectedCustomerId={selectedCustomerId}
+          selectedBusinessId={selectedBusinessId}
+          onBookingChange={handleBookingChange}
           onAmountChange={setAmount}
           onMethodChange={setMethod}
           onStatusChange={setStatus}
+          onCustomerChange={setSelectedCustomerId}
+          onBusinessChange={setSelectedBusinessId}
           onSubmit={handleSubmit}
           onClose={closeForm}
         />
@@ -780,7 +1044,13 @@ export default function PaymentsPage() {
         <KpiCard
           title="Último cobro"
           value={payments[0] ? formatCurrency(payments[0].amount) : '0 €'}
-          subtitle={payments[0] ? `Reserva #${payments[0].bookingId}` : 'Sin cobros'}
+          subtitle={
+            payments[0]
+              ? payments[0].bookingId
+                ? `Reserva #${payments[0].bookingId}`
+                : 'Sin reserva'
+              : 'Sin cobros'
+          }
         />
       </section>
 
@@ -880,11 +1150,11 @@ export default function PaymentsPage() {
               filteredPayments.map((payment) => (
                 <tr key={payment.id}>
                   <td style={{ fontWeight: 600 }}>{payment.id}</td>
-                  <td>#{payment.bookingId}</td>
-                  <td>{payment.booking?.serviceName || 'Sin reserva'}</td>
+                  <td>{payment.bookingId ? `#${payment.bookingId}` : findMatchingBooking(payment)?.id ? `#${findMatchingBooking(payment)!.id}` : 'Sin reserva'}</td>
+                  <td>{resolvePaymentBooking(payment)?.serviceName ?? 'Sin reserva'}</td>
                   <td>{formatCurrency(payment.amount)}</td>
                   <td>{payment.method}</td>
-                  <td>{new Date(payment.createdAt).toLocaleDateString('es-ES')}</td>
+                  <td>{formatBookingDateTime(payment)}</td>
                   <td>
                     <Badge status={payment.status} />
                   </td>
