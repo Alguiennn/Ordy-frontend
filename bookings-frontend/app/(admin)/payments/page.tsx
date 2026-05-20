@@ -662,8 +662,12 @@ export default function PaymentsPage() {
     setSelectedBookingId(value);
     const booking = bookings.find((b) => b.id === value);
     if (booking) {
-      setSelectedCustomerId(booking.customerId);
-      setSelectedBusinessId(booking.businessId);
+      if (booking.customerId) {
+        setSelectedCustomerId(booking.customerId);
+      }
+      if (booking.businessId) {
+        setSelectedBusinessId(booking.businessId);
+      }
     }
   }
 
@@ -778,6 +782,17 @@ export default function PaymentsPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>('');
   const [selectedBusinessId, setSelectedBusinessId] = useState<number | ''>('');
 
+  useEffect(() => {
+    if (formMode === 'create') {
+      if (customers.length > 0 && selectedCustomerId === '') {
+        setSelectedCustomerId(customers[0].id);
+      }
+      if (businesses.length > 0 && selectedBusinessId === '') {
+        setSelectedBusinessId(businesses[0].id);
+      }
+    }
+  }, [customers, businesses, formMode, selectedCustomerId, selectedBusinessId]);
+
   const bookingMap = useMemo(() => new Map(bookings.map((booking) => [booking.id, booking])), [bookings]);
 
   const selectedBooking = bookings.find((booking) => booking.id === selectedBookingId);
@@ -873,8 +888,10 @@ export default function PaymentsPage() {
           return;
         }
 
-        const customerId = selectedCustomerId !== '' ? Number(selectedCustomerId) : undefined;
-        const businessId = selectedBusinessId !== '' ? Number(selectedBusinessId) : undefined;
+        const customerId =
+          selectedCustomerId !== '' ? Number(selectedCustomerId) : bookingFull.customerId;
+        const businessId =
+          selectedBusinessId !== '' ? Number(selectedBusinessId) : bookingFull.businessId;
 
         if (customerId === undefined || !Number.isInteger(customerId) || customerId <= 0) {
           setFeedback('Selecciona un cliente válido.');
@@ -922,8 +939,14 @@ export default function PaymentsPage() {
             return;
           }
 
-          const customerId = selectedCustomerId !== '' ? Number(selectedCustomerId) : undefined;
-          const businessId = selectedBusinessId !== '' ? Number(selectedBusinessId) : undefined;
+          const customerId =
+            selectedCustomerId !== ''
+              ? Number(selectedCustomerId)
+              : bookingFull.customerId ?? editingPayment.customerId;
+          const businessId =
+            selectedBusinessId !== ''
+              ? Number(selectedBusinessId)
+              : bookingFull.businessId ?? editingPayment.businessId;
 
           if (customerId === undefined || !Number.isInteger(customerId) || customerId <= 0) {
             setFeedback('Selecciona un cliente válido.');
@@ -937,6 +960,22 @@ export default function PaymentsPage() {
           updatePayload.date = dt.toISOString();
           updatePayload.customerId = customerId;
           updatePayload.businessId = businessId;
+        } else {
+          const inferredCustomerId =
+            selectedCustomerId !== ''
+              ? Number(selectedCustomerId)
+              : editingPayment.customerId;
+          const inferredBusinessId =
+            selectedBusinessId !== ''
+              ? Number(selectedBusinessId)
+              : editingPayment.businessId;
+
+          if (inferredCustomerId !== undefined) {
+            updatePayload.customerId = inferredCustomerId;
+          }
+          if (inferredBusinessId !== undefined) {
+            updatePayload.businessId = inferredBusinessId;
+          }
         }
 
         const updatedPayment = await updatePayment(editingPayment.id, updatePayload);

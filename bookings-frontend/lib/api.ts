@@ -55,6 +55,37 @@ export interface UpdatePaymentDto {
   businessId?: number;
 }
 
+export interface Business {
+  id: number;
+  name: string;
+}
+
+export interface Customer {
+  id: number;
+  code?: string;
+  name: string;
+  phone: string;
+  email: string;
+  businessId?: number;
+  business?: Business;
+}
+
+export interface CreateCustomerDto {
+  code?: string;
+  name: string;
+  phone: string;
+  email: string;
+  businessId: number;
+}
+
+export interface UpdateCustomerDto {
+  code?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  businessId?: number;
+}
+
 export interface Booking {
   id: number;
   date: string;
@@ -271,15 +302,79 @@ export async function getAppointment(id: number): Promise<Booking> {
   return res.json();
 }
 
-export async function getCustomers(): Promise<any[]> {
+export async function getCustomers(): Promise<Customer[]> {
   const res = await fetch(`${API_URL}/customers`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Error al obtener clientes (${res.status})`);
   const json = await res.json();
-  // API returns { value: [...] }
   return json.value || json;
 }
 
-export async function getBusinesses(): Promise<any[]> {
+export async function createCustomer(data: CreateCustomerDto): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    let bodyText: string;
+    try {
+      bodyText = await res.text();
+    } catch (e) {
+      bodyText = `Status ${res.status}`;
+    }
+    const message = bodyText ? `Error al crear el cliente (${res.status}): ${bodyText}` : `Error al crear el cliente (${res.status})`;
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+export async function updateCustomer(id: number, data: UpdateCustomerDto): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    let bodyText: string;
+    try {
+      bodyText = await res.text();
+    } catch (e) {
+      bodyText = `Status ${res.status}`;
+    }
+    const message = bodyText ? `Error al actualizar el cliente (${res.status}): ${bodyText}` : `Error al actualizar el cliente (${res.status})`;
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+export async function deleteCustomer(id: number): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/customers/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!res.ok) {
+    let bodyText: string;
+    try {
+      bodyText = await res.text();
+    } catch (e) {
+      bodyText = `Status ${res.status}`;
+    }
+    const message = bodyText ? `Error al eliminar el cliente (${res.status}): ${bodyText}` : `Error al eliminar el cliente (${res.status})`;
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
+export async function getBusinesses(): Promise<Business[]> {
   const res = await fetch(`${API_URL}/business`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Error al obtener negocios (${res.status})`);
   const json = await res.json();
