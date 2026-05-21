@@ -1,17 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   Booking,
   BookingStatus,
   CreateBookingDto,
   UpdateBookingDto,
+  Customer,
+  Business,
 } from "@/lib/api";
 import {
   createAppointment,
   deleteAppointment,
   updateAppointment,
+  getCustomers,
+  getBusinesses,
 } from "@/lib/api";
+
+type BookingWithRelations = Booking & {
+  customer?: { id: number; name: string };
+  business?: { id: number; name: string };
+};
 
 function StatusBadge({ status }: { status: BookingStatus }) {
   const label =
@@ -39,21 +48,46 @@ function formatDate(date: string) {
 export default function BookingsClient({
   initialBookings,
 }: {
-  initialBookings: Booking[];
+  initialBookings: BookingWithRelations[];
 }) {
-  const [bookings, setBookings] = useState<Booking[]>(initialBookings);
+  const [bookings, setBookings] = useState<BookingWithRelations[]>(initialBookings);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [backendError, setBackendError] = useState(false);
 
-  const emptyForm: CreateBookingDto = {
+  const defaultBookingForm: CreateBookingDto = {
     date: "",
     time: "",
     status: "pending",
-    customerId: 1,
-    businessId: 1,
+    customerId: customers[0]?.id ?? 0,
+    businessId: businesses[0]?.id ?? 0,
     serviceName: "",
   };
 
-  const [createForm, setCreateForm] = useState<CreateBookingDto>(emptyForm);
-  const [editForm, setEditForm] = useState<CreateBookingDto>(emptyForm);
+  const [createForm, setCreateForm] = useState<CreateBookingDto>(defaultBookingForm);
+  const [editForm, setEditForm] = useState<CreateBookingDto>(defaultBookingForm);
+
+  const modalBackdropStyle = {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(15, 23, 42, 0.65)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1100,
+    padding: 24,
+  } as const;
+
+  const modalCardStyle = {
+    background: "#fff",
+    borderRadius: 18,
+    padding: 24,
+    width: "min(760px, 100%)",
+    maxHeight: "calc(100vh - 64px)",
+    overflowY: "auto",
+    boxShadow: "0 28px 68px rgba(15, 23, 42, 0.18)",
+  } as const;
 
   const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
   const [loadingCreate, setLoadingCreate] = useState(false);
@@ -65,6 +99,40 @@ export default function BookingsClient({
   const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setBackendError(false);
+        const [customersData, businessesData] = await Promise.all([getCustomers(), getBusinesses()]);
+        setCustomers(customersData);
+        setBusinesses(businessesData);
+      } catch (error) {
+        console.error('Error cargando datos del backend:', error);
+        setBackendError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (!loading && customers.length > 0 && businesses.length > 0) {
+      setCreateForm((prev) => ({
+        ...prev,
+        customerId: prev.customerId || customers[0].id,
+        businessId: prev.businessId || businesses[0].id,
+      }));
+      setEditForm((prev) => ({
+        ...prev,
+        customerId: prev.customerId || customers[0].id,
+        businessId: prev.businessId || businesses[0].id,
+      }));
+    }
+  }, [loading, customers, businesses]);
+
   const filteredBookings = useMemo(() => {
     if (statusFilter === "all") return bookings;
     return bookings.filter((booking) => booking.status === statusFilter);
@@ -74,6 +142,39 @@ export default function BookingsClient({
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
   const confirmedCount = bookings.filter((b) => b.status === "confirmed").length;
   const paidCount = bookings.filter((b) => b.status === "paid").length;
+
+  function renderBookingRow(booking: BookingWithRelations) {
+    const customerName =
+      customers.find((c) => c.id === booking.customerId)?.name ||
+      booking.customer?.name ||
+      (booking.customerId !== undefined ? String(booking.customerId) : "N/D");
+    const businessName =
+      businesses.find((b) => b.id === booking.businessId)?.name ||
+      booking.business?.name ||
+      (booking.businessId !== undefined ? String(booking.businessId) : "N/D");
+
+    return (
+      <tr key={booking.id}>
+        <td style={{ fontWeight: 600 }}>{booking.id}</td>
+        <td>{formatDate(booking.date)}</td>
+        <td>{booking.time}</td>
+        <td>{booking.serviceName}</td>
+        <td>{customerName}</td>
+        <td>{businessName}</td>
+        <td><StatusBadge status={booking.status} /></td>
+        <td>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="secondary-btn" onClick={() => openEditForm(booking)}>
+              Editar
+            </button>
+            <button type="button" className="secondary-btn" onClick={() => openDeleteModal(booking.id)}>
+              Eliminar
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
 
   function updateCreateForm<K extends keyof CreateBookingDto>(
     key: K,
@@ -96,19 +197,28 @@ export default function BookingsClient({
   }
 
   function resetCreateForm() {
-    setCreateForm(emptyForm);
+    setCreateForm(defaultBookingForm);
   }
 
   function resetEditForm() {
-    setEditForm(emptyForm);
+    setEditForm(defaultBookingForm);
   }
 
   function openCreateForm() {
+    if (backendError) {
+      setErrorMessage('No se puede crear reservas en modo offline');
+      return;
+    }
     setErrorMessage("");
     setSuccessMessage("");
     setEditingBookingId(null);
     setDeleteTargetId(null);
     resetEditForm();
+    setCreateForm((prev) => ({
+      ...prev,
+      customerId: prev.customerId || customers[0]?.id || 0,
+      businessId: prev.businessId || businesses[0]?.id || 0,
+    }));
     setIsCreateOpen(true);
   }
 
@@ -118,7 +228,7 @@ export default function BookingsClient({
     setIsCreateOpen(false);
   }
 
-  function openEditForm(booking: Booking) {
+  function openEditForm(booking: BookingWithRelations) {
     setErrorMessage("");
     setSuccessMessage("");
     setIsCreateOpen(false);
@@ -128,8 +238,8 @@ export default function BookingsClient({
       date: booking.date,
       time: booking.time,
       status: booking.status,
-      customerId: booking.customerId,
-      businessId: booking.businessId,
+      customerId: booking.customerId ?? booking.customer?.id ?? customers[0]?.id ?? 1,
+      businessId: booking.businessId ?? booking.business?.id ?? businesses[0]?.id ?? 1,
       serviceName: booking.serviceName,
     });
   }
@@ -152,13 +262,22 @@ export default function BookingsClient({
 
   async function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (backendError) {
+      setErrorMessage('No se puede crear reservas en modo offline');
+      return;
+    }
     setLoadingCreate(true);
     setSuccessMessage("");
     setErrorMessage("");
 
     try {
       const created = await createAppointment(createForm);
-      setBookings((prev) => [created, ...prev]);
+      const createdWithRelations: BookingWithRelations = {
+        ...created,
+        customer: customers.find((c) => c.id === created.customerId) ?? undefined,
+        business: businesses.find((b) => b.id === created.businessId) ?? undefined,
+      };
+      setBookings((prev) => [createdWithRelations, ...prev]);
       resetCreateForm();
       setIsCreateOpen(false);
       setSuccessMessage("Reserva creada correctamente.");
@@ -173,6 +292,10 @@ export default function BookingsClient({
     e.preventDefault();
 
     if (!editingBookingId) return;
+    if (backendError) {
+      setErrorMessage('No se puede editar reservas en modo offline');
+      return;
+    }
 
     setLoadingEdit(true);
     setSuccessMessage("");
@@ -189,10 +312,15 @@ export default function BookingsClient({
       };
 
       const updated = await updateAppointment(editingBookingId, payload);
+      const updatedWithRelations: BookingWithRelations = {
+        ...updated,
+        customer: customers.find((c) => c.id === updated.customerId) ?? undefined,
+        business: businesses.find((b) => b.id === updated.businessId) ?? undefined,
+      };
 
       setBookings((prev) =>
         prev.map((booking) =>
-          booking.id === editingBookingId ? updated : booking
+          booking.id === editingBookingId ? updatedWithRelations : booking
         )
       );
 
@@ -208,6 +336,10 @@ export default function BookingsClient({
 
   async function confirmDelete() {
     if (deleteTargetId === null) return;
+    if (backendError) {
+      setErrorMessage('No se puede eliminar reservas en modo offline');
+      return;
+    }
 
     setDeletingBookingId(deleteTargetId);
     setSuccessMessage("");
@@ -238,7 +370,7 @@ export default function BookingsClient({
           <p>Gestión de reservas conectada con la API.</p>
         </div>
 
-        <button className="primary-btn" type="button" onClick={openCreateForm}>
+        <button className="primary-btn" type="button" onClick={openCreateForm} disabled={backendError || loading}>
           Nueva reserva
         </button>
       </section>
@@ -274,15 +406,16 @@ export default function BookingsClient({
       </section>
 
       {isCreateOpen && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Nueva reserva</h3>
-            <button type="button" className="secondary-btn" onClick={closeCreateForm}>
-              Cancelar
-            </button>
-          </div>
+        <div style={modalBackdropStyle} onClick={(e) => { if (e.target === e.currentTarget) closeCreateForm(); }}>
+          <section className="section-card" style={modalCardStyle}>
+            <div className="panel-title-row">
+              <h3 className="panel-title">Nueva reserva</h3>
+              <button type="button" className="secondary-btn" onClick={closeCreateForm}>
+                Cancelar
+              </button>
+            </div>
 
-          <form onSubmit={handleCreateSubmit} className="page-stack" style={{ gap: 16 }}>
+            <form onSubmit={handleCreateSubmit} className="page-stack" style={{ gap: 16 }}>
             <div className="form-grid">
               <input
                 className="input"
@@ -309,28 +442,36 @@ export default function BookingsClient({
                 <option value="confirmed">Confirmada</option>
                 <option value="paid">Pagada</option>
               </select>
-              <input
-                className="input"
-                type="number"
-                min={1}
+              <select
+                className="select"
                 value={createForm.customerId}
                 onChange={(e) =>
                   updateCreateForm("customerId", Number(e.target.value))
                 }
-                placeholder="Customer ID"
                 required
-              />
-              <input
-                className="input"
-                type="number"
-                min={1}
+              >
+                <option value="">Selecciona cliente</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="select"
                 value={createForm.businessId}
                 onChange={(e) =>
                   updateCreateForm("businessId", Number(e.target.value))
                 }
-                placeholder="Business ID"
                 required
-              />
+              >
+                <option value="">Selecciona negocio</option>
+                {businesses.map((business) => (
+                  <option key={business.id} value={business.id}>
+                    {business.name}
+                  </option>
+                ))}
+              </select>
               <input
                 className="input input--full"
                 type="text"
@@ -350,18 +491,20 @@ export default function BookingsClient({
             </div>
           </form>
         </section>
+      </div>
       )}
 
       {editingBookingId !== null && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Editar reserva #{editingBookingId}</h3>
-            <button type="button" className="secondary-btn" onClick={closeEditForm}>
-              Cancelar
-            </button>
-          </div>
+        <div style={modalBackdropStyle} onClick={(e) => { if (e.target === e.currentTarget) closeEditForm(); }}>
+          <section className="section-card" style={modalCardStyle}>
+            <div className="panel-title-row">
+              <h3 className="panel-title">Editar reserva #{editingBookingId}</h3>
+              <button type="button" className="secondary-btn" onClick={closeEditForm}>
+                Cancelar
+              </button>
+            </div>
 
-          <form onSubmit={handleEditSubmit} className="page-stack" style={{ gap: 16 }}>
+            <form onSubmit={handleEditSubmit} className="page-stack" style={{ gap: 16 }}>
             <div className="form-grid">
               <input
                 className="input"
@@ -388,28 +531,36 @@ export default function BookingsClient({
                 <option value="confirmed">Confirmada</option>
                 <option value="paid">Pagada</option>
               </select>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={editForm.customerId ?? ""}
+              <select
+                className="select"
+                value={editForm.customerId}
                 onChange={(e) =>
                   updateEditForm("customerId", Number(e.target.value))
                 }
-                placeholder="Customer ID"
                 required
-              />
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={editForm.businessId ?? ""}
+              >
+                <option value="">Selecciona cliente</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="select"
+                value={editForm.businessId}
                 onChange={(e) =>
                   updateEditForm("businessId", Number(e.target.value))
                 }
-                placeholder="Business ID"
                 required
-              />
+              >
+                <option value="">Selecciona negocio</option>
+                {businesses.map((business) => (
+                  <option key={business.id} value={business.id}>
+                    {business.name}
+                  </option>
+                ))}
+              </select>
               <input
                 className="input input--full"
                 type="text"
@@ -429,6 +580,7 @@ export default function BookingsClient({
             </div>
           </form>
         </section>
+      </div>
       )}
 
       {deleteTargetId !== null && (
@@ -482,6 +634,16 @@ export default function BookingsClient({
           </div>
         </div>
 
+        {backendError && (
+          <div style={{ marginBottom: 12, padding: "10px 12px", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", color: "#92400E" }}>
+            ⚠️ Modo offline: usando datos locales. Los cambios no se guardarán en el servidor.
+          </div>
+        )}
+        {loading && (
+          <div style={{ marginBottom: 12, textAlign: "center", color: "var(--muted)", fontSize: "0.88rem" }}>
+            ⏳ Cargando datos...
+          </div>
+        )}
         {successMessage ? <div className="message-success" style={{ marginBottom: 12 }}>{successMessage}</div> : null}
         {errorMessage ? <div className="message-error" style={{ marginBottom: 12 }}>{errorMessage}</div> : null}
 
@@ -499,27 +661,7 @@ export default function BookingsClient({
             </tr>
           </thead>
           <tbody>
-            {filteredBookings.map((booking) => (
-              <tr key={booking.id}>
-                <td style={{ fontWeight: 600 }}>{booking.id}</td>
-                <td>{formatDate(booking.date)}</td>
-                <td>{booking.time}</td>
-                <td>{booking.serviceName}</td>
-                <td>{booking.customerId}</td>
-                <td>{booking.businessId}</td>
-                <td><StatusBadge status={booking.status} /></td>
-                <td>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" className="secondary-btn" onClick={() => openEditForm(booking)}>
-                      Editar
-                    </button>
-                    <button type="button" className="secondary-btn" onClick={() => openDeleteModal(booking.id)}>
-                      Eliminar
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {filteredBookings.map(renderBookingRow)}
           </tbody>
         </table>
       </section>
