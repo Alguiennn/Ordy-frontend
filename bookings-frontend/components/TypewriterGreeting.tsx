@@ -9,7 +9,7 @@ interface TypewriterProps {
   loop?: boolean;
   delay?: number;
   pause?: number;
-  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'span'; // Propiedad para elegir la etiqueta
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'span';
 }
 
 const TypewriterGreeting: React.FC<TypewriterProps> = ({ 
@@ -18,10 +18,9 @@ const TypewriterGreeting: React.FC<TypewriterProps> = ({
   loop = false,
   delay = 70,
   pause = 2500,
-  as: Component = 'h2' // Por defecto será un h2
+  as: Component = 'h2'
 }) => {
   return (
-    /* Aquí usamos 'Component' que por defecto es h2 */
     <Component className={className} style={{ minHeight: '1.2em' }}>
       <Typewriter
         onInit={(typewriter) => {
