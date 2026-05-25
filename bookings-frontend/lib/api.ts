@@ -1,5 +1,7 @@
 export type BookingStatus = "pending" | "confirmed" | "paid";
 
+// Bookings, Appointments - Reservas
+
 export interface Booking {
   id: number;
   date: string;
@@ -88,5 +90,129 @@ export async function deleteAppointment(
     throw new Error("Error al eliminar la reserva");
   }
 
+  return res.json();
+}
+// Customers - Clientes
+
+export interface Customer {
+  id: number;
+  code: string;
+  name: string;
+  phone: string;
+  email: string;
+  businessId: number;
+}
+
+export interface CreateCustomerDto {
+  code: string;
+  name: string;
+  phone?: string;
+  email: string;
+  businessId: number;
+}
+
+export interface UpdateCustomerDto extends Partial<CreateCustomerDto> {}
+
+export async function getCustomers(): Promise<Customer[]> {
+  const res = await fetch(`${API_URL}/customers`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Error al obtener los clientes");
+  return res.json();
+}
+
+export async function createCustomer(data: CreateCustomerDto): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al crear el cliente");
+  return res.json();
+}
+
+export async function updateCustomer(id: number, data: UpdateCustomerDto): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al editar el cliente");
+  return res.json();
+}
+
+export async function deleteCustomer(id: number): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/customers/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Error al eliminar el cliente");
+  return res.json();
+}
+
+// Payments - Pagos
+
+export type PaymentStatus = "pending" | "paid";
+
+export interface Payment {
+  id: number;
+  code: string;
+  customerId: number;
+  businessId: number;
+  amount: number;
+  method: string;
+  date: string;
+  status: PaymentStatus;
+}
+
+export interface CreatePaymentDto {
+  code: string;
+  customerId: number;
+  businessId: number;
+  amount: number;
+  method: string;
+  date: string;
+  status: PaymentStatus;
+}
+
+export interface UpdatePaymentDto extends Partial<CreatePaymentDto> {}
+
+export async function getPayments(): Promise<Payment[]> {
+  const res = await fetch(`${API_URL}/payments`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Error al obtener los pagos");
+  return res.json();
+}
+
+export async function createPayment(data: CreatePaymentDto): Promise<Payment> {
+  const res = await fetch(`${API_URL}/payments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al crear el pago");
+  return res.json();
+}
+
+export async function updatePayment(id: number, data: UpdatePaymentDto): Promise<Payment> {
+  const res = await fetch(`${API_URL}/payments/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al editar el pago");
+  return res.json();
+}
+
+export async function deletePayment(id: number): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/payments/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Error al eliminar el pago");
+  return res.json();
+}
+
+// Businesses - Negocios
+
+export interface Business {
+  id: number;
+  name: string;
+}
+
+export async function getBusinesses(): Promise<Business[]> {
+  const res = await fetch(`${API_URL}/businesses`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Error al obtener los negocios");
   return res.json();
 }
