@@ -116,267 +116,257 @@ export interface UpdateBookingDto {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+// Utility to make fetch requests with timeout and better error handling
+async function apiCall<T>(
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<T> {
+  const timeout = options.timeout || 30000;
+  const controller = new AbortController();
+  
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorMessage = `Error ${response.status}`;
+      
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } else {
+          const text = await response.text();
+          if (text) errorMessage = text;
+        }
+      } catch (e) {
+        // Use default error message if parsing fails
+      }
+
+      throw new Error(`${errorMessage}`);
+    }
+
+    return await response.json() as T;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error('No se puede conectar con el servidor. Verifica tu conexión de internet.');
+    }
+    
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('La solicitud tardó demasiado. El servidor no responde.');
+    }
+    
+    throw error;
+  }
+}
+
 // ─── Appointments ────────────────────────────────────────────────────────────
 
 export async function getAppointments(): Promise<Booking[]> {
-  const res = await fetch(`${API_URL}/appointments`, {
+  return apiCall<Booking[]>(`${API_URL}/appointments`, {
     cache: "no-store",
   });
-
-  if (!res.ok) {
-    throw new Error(`Error al obtener las reservas (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function createAppointment(data: CreateBookingDto): Promise<Booking> {
-  const res = await fetch(`${API_URL}/appointments`, {
+  // Validate required fields
+  if (!data.date || !data.time || !data.customerId || !data.businessId) {
+    throw new Error('Faltan campos requeridos para crear la reserva');
+  }
+
+  return apiCall<Booking>(`${API_URL}/appointments`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    throw new Error(`Error al crear la reserva (${res.status})`);
-  }
-
-  return res.json();
 }
 export async function updatePayment(id: number, data: UpdatePaymentDto): Promise<Payment> {
-  const res = await fetch(`${API_URL}/payments/${id}`, {
+  if (!id || id <= 0) {
+    throw new Error('ID de pago inválido');
+  }
+
+  return apiCall<Payment>(`${API_URL}/payments/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    let bodyText: string;
-    try {
-      bodyText = await res.text();
-    } catch (e) {
-      bodyText = `Status ${res.status}`;
-    }
-    const message = bodyText ? `Error al actualizar el pago (${res.status}): ${bodyText}` : `Error al actualizar el pago (${res.status})`;
-    throw new Error(message);
-  }
-
-  return res.json();
 }
 
 export async function deletePayment(id: number): Promise<{ message: string }> {
-  const res = await fetch(`${API_URL}/payments/${id}`, {
-    method: "DELETE",
-  });
-
-  if (!res.ok) {
-    let bodyText: string;
-    try {
-      bodyText = await res.text();
-    } catch (e) {
-      bodyText = `Status ${res.status}`;
-    }
-    const message = bodyText ? `Error al eliminar el pago (${res.status}): ${bodyText}` : `Error al eliminar el pago (${res.status})`;
-    throw new Error(message);
+  if (!id || id <= 0) {
+    throw new Error('ID de pago inválido');
   }
 
-  return res.json();
+  return apiCall<{ message: string }>(`${API_URL}/payments/${id}`, {
+    method: "DELETE",
+  });
 }
 export async function updateAppointment(
   id: number,
   data: UpdateBookingDto
 ): Promise<Booking> {
-  const res = await fetch(`${API_URL}/appointments/${id}`, {
+  if (!id || id <= 0) {
+    throw new Error('ID de reserva inválido');
+  }
+
+  return apiCall<Booking>(`${API_URL}/appointments/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    throw new Error(`Error al editar la reserva (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function deleteAppointment(id: number): Promise<{ message: string }> {
-  const res = await fetch(`${API_URL}/appointments/${id}`, {
-    method: "DELETE",
-  });
-
-  if (!res.ok) {
-    throw new Error(`Error al eliminar la reserva (${res.status})`);
+  if (!id || id <= 0) {
+    throw new Error('ID de reserva inválido');
   }
 
-  return res.json();
+  return apiCall<{ message: string }>(`${API_URL}/appointments/${id}`, {
+    method: "DELETE",
+  });
 }
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
 
 export async function getPayments(): Promise<Payment[]> {
-  const res = await fetch(`${API_URL}/payments`, {
-    cache: "no-store",
-  });
-
-  if (res.ok) {
-    return res.json();
+  try {
+    return await apiCall<Payment[]>(`${API_URL}/payments`, {
+      cache: "no-store",
+    });
+  } catch (error) {
+    // Fallback to mock data if endpoint is unavailable
+    if (error instanceof Error && (error.message.includes('404') || error.message.includes('No se puede conectar'))) {
+      console.warn('GET /payments no disponible, usando datos mock de ejemplo.');
+      return [
+        {
+          id: 1,
+          amount: 65,
+          method: 'Tarjeta',
+          status: 'paid',
+          date: new Date().toISOString(),
+          customerId: 1,
+          businessId: 1,
+          booking: { serviceName: 'Corte de pelo' },
+        },
+        {
+          id: 2,
+          amount: 80,
+          method: 'Efectivo',
+          status: 'pending',
+          date: new Date().toISOString(),
+          customerId: 2,
+          businessId: 1,
+          booking: { serviceName: 'Manicura' },
+        },
+        {
+          id: 3,
+          amount: 120,
+          method: 'Bizum',
+          status: 'paid',
+          date: new Date().toISOString(),
+          customerId: 3,
+          businessId: 2,
+          booking: { serviceName: 'Sesión de spa' },
+        },
+      ];
+    }
+    throw error;
   }
-
-  if (res.status === 404) {
-    console.warn('GET /payments no disponible, usando datos mock de ejemplo.');
-    return [
-      {
-        id: 1,
-        amount: 65,
-        method: 'Tarjeta',
-        status: 'paid',
-        date: new Date().toISOString(),
-        customerId: 1,
-        businessId: 1,
-        booking: { serviceName: 'Corte de pelo' },
-      },
-      {
-        id: 2,
-        amount: 80,
-        method: 'Efectivo',
-        status: 'pending',
-        date: new Date().toISOString(),
-        customerId: 2,
-        businessId: 1,
-        booking: { serviceName: 'Manicura' },
-      },
-      {
-        id: 3,
-        amount: 120,
-        method: 'Bizum',
-        status: 'paid',
-        date: new Date().toISOString(),
-        customerId: 3,
-        businessId: 2,
-        booking: { serviceName: 'Sesión de spa' },
-      },
-    ];
-  }
-
-  throw new Error(`Error al obtener los pagos (${res.status})`);
 }
 
 export async function createPayment(data: CreatePaymentDto): Promise<Payment> {
-  const res = await fetch(`${API_URL}/payments`, {
+  if (!data.amount || !data.customerId || !data.businessId || !data.method) {
+    throw new Error('Faltan campos requeridos para crear el pago');
+  }
+
+  return apiCall<Payment>(`${API_URL}/payments`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    let bodyText: string;
-    try {
-      bodyText = await res.text();
-    } catch (e) {
-      bodyText = `Status ${res.status}`;
-    }
-    const message = bodyText ? `Error al crear el pago (${res.status}): ${bodyText}` : `Error al crear el pago (${res.status})`;
-    throw new Error(message);
-  }
-
-  return res.json();
 }
 
 export async function getAppointment(id: number): Promise<Booking> {
-  const res = await fetch(`${API_URL}/appointments/${id}`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error(`Error al obtener la reserva (${res.status})`);
+  if (!id || id <= 0) {
+    throw new Error('ID de reserva inválido');
   }
 
-  return res.json();
+  return apiCall<Booking>(`${API_URL}/appointments/${id}`, {
+    cache: "no-store",
+  });
 }
 
 export async function getCustomers(): Promise<Customer[]> {
-  const res = await fetch(`${API_URL}/customers`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Error al obtener clientes (${res.status})`);
-  const json = await res.json();
-  return json.value || json;
+  const data = await apiCall<Customer[] | { value: Customer[] }>(
+    `${API_URL}/customers`,
+    { cache: 'no-store' }
+  );
+  
+  // Handle both array and wrapped response formats
+  return Array.isArray(data) ? data : (data.value || []);
 }
 
 export async function createCustomer(data: CreateCustomerDto): Promise<Customer> {
-  const res = await fetch(`${API_URL}/customers`, {
+  if (!data.name || !data.phone || !data.email || !data.businessId) {
+    throw new Error('Faltan campos requeridos para crear el cliente');
+  }
+
+  return apiCall<Customer>(`${API_URL}/customers`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    let bodyText: string;
-    try {
-      bodyText = await res.text();
-    } catch (e) {
-      bodyText = `Status ${res.status}`;
-    }
-    const message = bodyText ? `Error al crear el cliente (${res.status}): ${bodyText}` : `Error al crear el cliente (${res.status})`;
-    throw new Error(message);
-  }
-
-  return res.json();
 }
 
 export async function updateCustomer(id: number, data: UpdateCustomerDto): Promise<Customer> {
-  const res = await fetch(`${API_URL}/customers/${id}`, {
+  if (!id || id <= 0) {
+    throw new Error('ID de cliente inválido');
+  }
+
+  return apiCall<Customer>(`${API_URL}/customers/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    let bodyText: string;
-    try {
-      bodyText = await res.text();
-    } catch (e) {
-      bodyText = `Status ${res.status}`;
-    }
-    const message = bodyText ? `Error al actualizar el cliente (${res.status}): ${bodyText}` : `Error al actualizar el cliente (${res.status})`;
-    throw new Error(message);
-  }
-
-  return res.json();
 }
 
 export async function deleteCustomer(id: number): Promise<{ message: string }> {
-  const res = await fetch(`${API_URL}/customers/${id}`, {
-    method: 'DELETE',
-  });
-
-  if (!res.ok) {
-    let bodyText: string;
-    try {
-      bodyText = await res.text();
-    } catch (e) {
-      bodyText = `Status ${res.status}`;
-    }
-    const message = bodyText ? `Error al eliminar el cliente (${res.status}): ${bodyText}` : `Error al eliminar el cliente (${res.status})`;
-    throw new Error(message);
+  if (!id || id <= 0) {
+    throw new Error('ID de cliente inválido');
   }
 
-  return res.json();
+  return apiCall<{ message: string }>(`${API_URL}/customers/${id}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function getBusinesses(): Promise<Business[]> {
-  const res = await fetch(`${API_URL}/business`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Error al obtener negocios (${res.status})`);
-  const json = await res.json();
-  return json.value || json;
+  const data = await apiCall<Business[] | { value: Business[] }>(
+    `${API_URL}/business`,
+    { cache: 'no-store' }
+  );
+  
+  // Handle both array and wrapped response formats
+  return Array.isArray(data) ? data : (data.value || []);
 }

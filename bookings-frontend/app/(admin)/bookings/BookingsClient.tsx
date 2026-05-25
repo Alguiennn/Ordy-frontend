@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import type {
   Booking,
   BookingStatus,
@@ -16,6 +16,7 @@ import {
   getCustomers,
   getBusinesses,
 } from "@/lib/api";
+import { useApi, clearApiCache } from "@/lib/hooks";
 
 type BookingWithRelations = Booking & {
   customer?: { id: number; name: string };
@@ -51,10 +52,28 @@ export default function BookingsClient({
   initialBookings: BookingWithRelations[];
 }) {
   const [bookings, setBookings] = useState<BookingWithRelations[]>(initialBookings);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [backendError, setBackendError] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
+  const [loadingCreate, setLoadingCreate] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [deletingBookingId, setDeletingBookingId] = useState<number | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
+  // Use improved API hooks with caching and retry logic
+  const { data: customersData = [], loading: customersLoading, error: customersError, refetch: refetchCustomers } = 
+    useApi<Customer[]>(() => getCustomers(), 'customers', { cacheTime: 10 * 60 * 1000 });
+  
+  const { data: businessesData = [], loading: businessesLoading, error: businessesError, refetch: refetchBusinesses } = 
+    useApi<Business[]>(() => getBusinesses(), 'businesses', { cacheTime: 10 * 60 * 1000 });
+
+  const customers = customersData || [];
+  const businesses = businessesData || [];
+  const loading = customersLoading || businessesLoading;
+  const hasError = customersError || businessesError;
+  const backendError = !!hasError;
 
   const defaultBookingForm: CreateBookingDto = {
     date: "",
@@ -89,37 +108,9 @@ export default function BookingsClient({
     boxShadow: "0 28px 68px rgba(15, 23, 42, 0.18)",
   } as const;
 
-  const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
-  const [loadingCreate, setLoadingCreate] = useState(false);
-  const [loadingEdit, setLoadingEdit] = useState(false);
-  const [deletingBookingId, setDeletingBookingId] = useState<number | null>(null);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
-  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-
+  // Update forms when data loads
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setBackendError(false);
-        const [customersData, businessesData] = await Promise.all([getCustomers(), getBusinesses()]);
-        setCustomers(customersData);
-        setBusinesses(businessesData);
-      } catch (error) {
-        console.error('Error cargando datos del backend:', error);
-        setBackendError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (!loading && customers.length > 0 && businesses.length > 0) {
+    if (customers.length > 0 && businesses.length > 0) {
       setCreateForm((prev) => ({
         ...prev,
         customerId: prev.customerId || customers[0].id,
@@ -131,7 +122,7 @@ export default function BookingsClient({
         businessId: prev.businessId || businesses[0].id,
       }));
     }
-  }, [loading, customers, businesses]);
+  }, [customers, businesses]);
 
   const filteredBookings = useMemo(() => {
     if (statusFilter === "all") return bookings;
@@ -206,7 +197,11 @@ export default function BookingsClient({
 
   function openCreateForm() {
     if (backendError) {
-      setErrorMessage('No se puede crear reservas en modo offline');
+      setErrorMessage('🔄 Reconecta con el servidor para crear reservas');
+      return;
+    }
+    if (loading) {
+      setErrorMessage('⏳ Espera a que terminen de cargar los datos');
       return;
     }
     setErrorMessage("");
@@ -266,6 +261,13 @@ export default function BookingsClient({
       setErrorMessage('No se puede crear reservas en modo offline');
       return;
     }
+    
+    // Validate form
+    if (!createForm.date || !createForm.time || !createForm.customerId || !createForm.businessId) {
+      setErrorMessage('Por favor completa todos los campos requeridos');
+      return;
+    }
+
     setLoadingCreate(true);
     setSuccessMessage("");
     setErrorMessage("");
@@ -280,9 +282,12 @@ export default function BookingsClient({
       setBookings((prev) => [createdWithRelations, ...prev]);
       resetCreateForm();
       setIsCreateOpen(false);
-      setSuccessMessage("Reserva creada correctamente.");
-    } catch {
-      setErrorMessage("No se pudo crear la reserva. Revisa los datos o el backend.");
+      setSuccessMessage("✅ Reserva creada correctamente.");
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido al crear la reserva';
+      setErrorMessage(`❌ ${errorMsg}`);
+      console.error('Error creating booking:', error);
     } finally {
       setLoadingCreate(false);
     }
@@ -294,6 +299,12 @@ export default function BookingsClient({
     if (!editingBookingId) return;
     if (backendError) {
       setErrorMessage('No se puede editar reservas en modo offline');
+      return;
+    }
+
+    // Validate form
+    if (!editForm.date || !editForm.time || !editForm.customerId || !editForm.businessId) {
+      setErrorMessage('Por favor completa todos los campos requeridos');
       return;
     }
 
@@ -326,9 +337,12 @@ export default function BookingsClient({
 
       setEditingBookingId(null);
       resetEditForm();
-      setSuccessMessage("Reserva actualizada correctamente.");
-    } catch {
-      setErrorMessage("No se pudo actualizar la reserva.");
+      setSuccessMessage("✅ Reserva actualizada correctamente.");
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido al actualizar la reserva';
+      setErrorMessage(`❌ ${errorMsg}`);
+      console.error('Error updating booking:', error);
     } finally {
       setLoadingEdit(false);
     }
@@ -353,10 +367,13 @@ export default function BookingsClient({
         closeEditForm();
       }
 
-      setSuccessMessage("Reserva eliminada correctamente.");
+      setSuccessMessage("✅ Reserva eliminada correctamente.");
+      setTimeout(() => setSuccessMessage(""), 4000);
       closeDeleteModal();
-    } catch {
-      setErrorMessage("No se pudo eliminar la reserva.");
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido al eliminar la reserva';
+      setErrorMessage(`❌ ${errorMsg}`);
+      console.error('Error deleting booking:', error);
     } finally {
       setDeletingBookingId(null);
     }
@@ -371,7 +388,7 @@ export default function BookingsClient({
         </div>
 
         <button className="primary-btn" type="button" onClick={openCreateForm} disabled={backendError || loading}>
-          Nueva reserva
+          {loading ? "⏳ Cargando..." : "✚ Nueva reserva"}
         </button>
       </section>
 
@@ -635,13 +652,34 @@ export default function BookingsClient({
         </div>
 
         {backendError && (
-          <div style={{ marginBottom: 12, padding: "10px 12px", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", color: "#92400E" }}>
-            ⚠️ Modo offline: usando datos locales. Los cambios no se guardarán en el servidor.
+          <div style={{ marginBottom: 12, padding: "12px 14px", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", color: "#7F1D1D", display: "flex", gap: 8 }}>
+            <span>⚠️</span>
+            <div>
+              <strong>Modo offline:</strong> Los cambios no se guardarán. 
+              <button 
+                type="button" 
+                onClick={async () => { await Promise.all([refetchCustomers(), refetchBusinesses()]); }} 
+                style={{ marginLeft: 8, background: "transparent", color: "#7F1D1D", textDecoration: "underline", cursor: "pointer", border: "none", padding: 0 }}
+              >
+                Reconectar
+              </button>
+            </div>
           </div>
         )}
         {loading && (
-          <div style={{ marginBottom: 12, textAlign: "center", color: "var(--muted)", fontSize: "0.88rem" }}>
-            ⏳ Cargando datos...
+          <div style={{ marginBottom: 12, padding: "12px 14px", background: "#DBEAFE", border: "1px solid #93C5FD", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", color: "#1E40AF", display: "flex", gap: 8, alignItems: "center" }}>
+            <span>⏳</span>
+            <div>Cargando datos de clientes y negocios...</div>
+          </div>
+        )}
+        {customersError && (
+          <div style={{ marginBottom: 12, padding: "12px 14px", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", color: "#7F1D1D" }}>
+            ❌ Error al cargar clientes: {customersError.message}
+          </div>
+        )}
+        {businessesError && (
+          <div style={{ marginBottom: 12, padding: "12px 14px", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", color: "#7F1D1D" }}>
+            ❌ Error al cargar negocios: {businessesError.message}
           </div>
         )}
         {successMessage ? <div className="message-success" style={{ marginBottom: 12 }}>{successMessage}</div> : null}
@@ -654,14 +692,22 @@ export default function BookingsClient({
               <th>Fecha</th>
               <th>Hora</th>
               <th>Servicio</th>
-              <th>Customer</th>
-              <th>Business</th>
+              <th>Cliente</th>
+              <th>Negocio</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {filteredBookings.map(renderBookingRow)}
+            {filteredBookings.length > 0 ? (
+              filteredBookings.map(renderBookingRow)
+            ) : (
+              <tr>
+                <td colSpan={8} style={{ textAlign: "center", padding: "24px", color: "var(--muted)", fontSize: "0.88rem" }}>
+                  {bookings.length === 0 ? "📭 No hay reservas registradas" : `📭 No hay reservas con estado "${statusFilter}"`}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>

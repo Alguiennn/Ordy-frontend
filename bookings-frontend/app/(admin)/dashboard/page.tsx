@@ -1,46 +1,22 @@
+import Link from 'next/link';
 import { museoModerno } from '@/lib/fonts';
+import {
+  Booking,
+  BookingStatus,
+  getAppointments,
+  getPayments,
+  getBusinesses,
+  getCustomers,
+} from '@/lib/api';
+import ExportReportButton from './ExportReportButton';
 
-type DashboardBookingStatus = "pending" | "confirmed" | "paid";
-
-type DashboardBooking = {
-  time: string;
-  client: string;
-  business: string;
-  service: string;
-  status: DashboardBookingStatus;
-};
-
-const bookings: DashboardBooking[] = [
-  {
-    time: "09:00",
-    client: "María López",
-    business: "Peluquería Nova",
-    service: "Corte + peinado",
-    status: "confirmed",
-  },
-  {
-    time: "10:30",
-    client: "Carlos Pérez",
-    business: "Restaurante Marea",
-    service: "Reserva para 4",
-    status: "pending",
-  },
-  {
-    time: "12:00",
-    client: "Lucía Sánchez",
-    business: "Barber Studio",
-    service: "Corte caballero",
-    status: "paid",
-  },
-];
-
-function Badge({ status }: { status: DashboardBookingStatus }) {
+function Badge({ status }: { status: BookingStatus }) {
   const label =
-    status === "pending"
-      ? "Pendiente"
-      : status === "confirmed"
-        ? "Confirmada"
-        : "Pagada";
+    status === 'pending'
+      ? 'Pendiente'
+      : status === 'confirmed'
+      ? 'Confirmada'
+      : 'Pagada';
 
   return <span className={`badge badge--${status}`}>{label}</span>;
 }
@@ -54,7 +30,7 @@ function KpiCard({
   title: string;
   value: string;
   subtitle: string;
-  variant?: "positive" | "warning";
+  variant?: 'positive' | 'warning';
 }) {
   return (
     <div className="kpi-card">
@@ -62,11 +38,11 @@ function KpiCard({
       <h3 className="kpi-card__value">{value}</h3>
       <p
         className={`kpi-card__meta ${
-          variant === "positive"
-            ? "kpi-card__meta--positive"
-            : variant === "warning"
-              ? "kpi-card__meta--warning"
-              : ""
+          variant === 'positive'
+            ? 'kpi-card__meta--positive'
+            : variant === 'warning'
+            ? 'kpi-card__meta--warning'
+            : ''
         }`}
       >
         {subtitle}
@@ -75,7 +51,100 @@ function KpiCard({
   );
 }
 
-export default function DashboardPage() {
+function formatMoney(amount: number) {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function parseBookingDate(booking: Booking) {
+  return new Date(`${booking.date}T${booking.time}`);
+}
+
+function isToday(date: Date) {
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+function isCurrentMonth(date: Date) {
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
+export default async function DashboardPage() {
+  const [bookings, payments, businesses, customers] = await Promise.all([
+    getAppointments(),
+    getPayments(),
+    getBusinesses(),
+    getCustomers(),
+  ]);
+
+  const now = new Date();
+  const businessMap = new Map(businesses.map((business) => [business.id, business.name]));
+  const customerMap = new Map(customers.map((customer) => [customer.id, customer.name]));
+
+  const bookingsToday = bookings.filter((booking) => {
+    const bookingDate = parseBookingDate(booking);
+    return !Number.isNaN(bookingDate.getTime()) && isToday(bookingDate);
+  });
+
+  const bookingsMonth = bookings.filter((booking) => {
+    const bookingDate = parseBookingDate(booking);
+    return !Number.isNaN(bookingDate.getTime()) && isCurrentMonth(bookingDate);
+  });
+
+  const totalToday = bookingsToday.length;
+  const pendingToday = bookingsToday.filter((booking) => booking.status === 'pending').length;
+  const activeCustomersThisMonth = new Set(bookingsMonth.map((booking) => booking.customerId)).size;
+
+  const paidPaymentsToday = payments.filter((payment) => {
+    const paymentDate = new Date(payment.date);
+    return !Number.isNaN(paymentDate.getTime()) && payment.status === 'paid' && isToday(paymentDate);
+  });
+
+  const collectedToday = paidPaymentsToday.reduce((sum, payment) => sum + (payment.amount ?? 0), 0);
+
+  const nextBooking = bookings
+    .map((booking) => ({ booking, date: parseBookingDate(booking) }))
+    .filter(({ date }) => !Number.isNaN(date.getTime()) && date > now)
+    .sort((a, b) => a.date.getTime() - b.date.getTime())[0]?.booking;
+
+  const upcomingBookings = bookings
+    .filter((booking) => {
+      const bookingDate = parseBookingDate(booking);
+      return !Number.isNaN(bookingDate.getTime()) && bookingDate >= now;
+    })
+    .sort((a, b) => parseBookingDate(a).getTime() - parseBookingDate(b).getTime());
+
+  const businessCountsToday = bookingsToday.reduce<Record<number, number>>((acc, booking) => {
+    acc[booking.businessId] = (acc[booking.businessId] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const featuredBusinessId = Object.keys(businessCountsToday).reduce<number | null>((winner, key) => {
+    const businessId = Number(key);
+    if (winner === null) return businessId;
+    return businessCountsToday[businessId] > businessCountsToday[winner] ? businessId : winner;
+  }, null);
+
+  const featuredBusinessName =
+    featuredBusinessId !== null && businessMap.get(featuredBusinessId)
+      ? businessMap.get(featuredBusinessId)
+      : featuredBusinessId !== null
+      ? `Comercio ${featuredBusinessId}`
+      : 'Sin comercio destacado';
+
+  const featuredBusinessCount = featuredBusinessId !== null ? businessCountsToday[featuredBusinessId] : 0;
+
+  const nextBookingCustomer = nextBooking ? customerMap.get(nextBooking.customerId) : null;
+  const nextBookingBusiness = nextBooking ? businessMap.get(nextBooking.businessId) : null;
+
   return (
     <div className="page-stack">
       <section className="page-hero">
@@ -84,37 +153,44 @@ export default function DashboardPage() {
           <p>Aquí tienes lo que está pasando en <span className={museoModerno.className}>Ordy</span> hoy.</p>
         </div>
 
-        <button className="primary-btn" type="button">
-          Export report
-        </button>
+        <div className="export-buttons" style={{ display: 'flex', gap: '0.75rem' }}>
+          <ExportReportButton bookings={bookings} customers={customers} businesses={businesses} payments={payments} />
+        </div>
       </section>
 
       <section className="kpi-grid">
         <KpiCard
           title="Reservas hoy"
-          value="24"
-          subtitle="+5 respecto a ayer"
+          value={`${totalToday}`}
+          subtitle={`${pendingToday} pendientes`}
           variant="positive"
         />
-        <KpiCard title="Cobrado hoy" value="820 €" subtitle="18 pagos registrados" />
+        <KpiCard
+          title="Cobrado hoy"
+          value={formatMoney(collectedToday)}
+          subtitle={`${paidPaymentsToday.length} pagos registrados`}
+        />
         <KpiCard
           title="Pendientes"
-          value="6"
+          value={`${pendingToday}`}
           subtitle="Seguimiento necesario"
           variant="warning"
         />
-        <KpiCard title="Clientes activos" value="214" subtitle="Este mes" />
+        <KpiCard
+          title="Clientes activos"
+          value={`${activeCustomersThisMonth}`}
+          subtitle="Este mes"
+        />
       </section>
 
       <section className="dashboard-grid">
         <div className="section-card">
           <div className="panel-title-row">
             <h3 className="panel-title">Próximas reservas</h3>
-            <button className="panel-subtle-link" type="button">
+            <Link href="/bookings" className="panel-subtle-link">
               Ver todas
-            </button>
+            </Link>
           </div>
-
           <table className="data-table">
             <thead>
               <tr>
@@ -126,17 +202,26 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {bookings.map((booking, index) => (
-                <tr key={index}>
-                  <td style={{ fontWeight: 600 }}>{booking.time}</td>
-                  <td>{booking.client}</td>
-                  <td>{booking.business}</td>
-                  <td>{booking.service}</td>
-                  <td>
-                    <Badge status={booking.status} />
+              {upcomingBookings.length > 0 ? (
+                upcomingBookings.map((booking) => (
+                  <tr key={booking.id}>
+                    <td>{new Date(booking.date).toLocaleDateString('es-ES')}</td>
+                    <td style={{ fontWeight: 600 }}>{booking.time}</td>
+                    <td>{customerMap.get(booking.customerId) ?? `Cliente ${booking.customerId}`}</td>
+                    <td>{businessMap.get(booking.businessId) ?? `Comercio ${booking.businessId}`}</td>
+                    <td>{booking.serviceName}</td>
+                    <td>
+                      <Badge status={booking.status} />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                    No hay reservas próximas.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -144,19 +229,23 @@ export default function DashboardPage() {
         <div className="info-stack">
           <div className="info-box">
             <p className="info-box__eyebrow">Siguiente reserva</p>
-            <p className="info-box__title">María López</p>
-            <p className="info-box__text">09:00 · Peluquería Nova</p>
+            <p className="info-box__title">{nextBookingCustomer ?? 'Sin reservas próximas'}</p>
+            <p className="info-box__text">
+              {nextBooking
+                ? `${nextBooking.time} · ${nextBookingBusiness ?? `Comercio ${nextBooking.businessId}`}`
+                : 'No hay reservas en agenda'}
+            </p>
           </div>
 
           <div className="info-box">
             <p className="info-box__eyebrow">Comercio destacado</p>
-            <p className="info-box__title">Restaurante Marea</p>
-            <p className="info-box__text">6 reservas hoy</p>
+            <p className="info-box__title">{featuredBusinessName}</p>
+            <p className="info-box__text">{featuredBusinessCount} reservas hoy</p>
           </div>
 
           <div className="info-box">
             <p className="info-box__eyebrow">Recordatorios</p>
-            <p className="info-box__title">4 confirmaciones pendientes</p>
+            <p className="info-box__title">{pendingToday} confirmaciones pendientes</p>
             <p className="info-box__text">Revisión recomendada esta mañana</p>
           </div>
         </div>
