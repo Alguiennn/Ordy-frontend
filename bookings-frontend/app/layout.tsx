@@ -1,6 +1,5 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import ThemeToggle from "./(admin)/themeToggle";
 
 export const metadata: Metadata = {
   title: "Panel de Administración de Ordy",
@@ -15,7 +14,6 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <ThemeToggle />
         {children}
       </body>
     </html>

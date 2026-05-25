@@ -640,6 +640,8 @@ body {
 }
 
 .admin-header-top {
+  display: flex;
+  justify-content: space-between;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 20px 24px;
@@ -764,7 +766,6 @@ body {
 }
 
 .theme-toggle {
-  position: fixed;
   bottom: 640px;
   right: 24px;
   z-index: 100;
