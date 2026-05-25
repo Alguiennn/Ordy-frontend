@@ -2,13 +2,7 @@ import { museoModerno } from '@/lib/fonts';
 
 export default function Header() {
     return (
-      <header
-        style={{
-          backgroundColor: "#ffffff",
-          borderBottom: "1px solid #e5e7eb",
-          padding: "20px 24px",
-        }}
-      >
+      <header className="admin-header-top">
         <h1 style={{ margin: 0, fontSize: "28px" }}>
           Panel de Administración
         </h1>
