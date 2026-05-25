@@ -1,3 +1,4 @@
+import ThemeToggle from '@/app/(admin)/themeToggle';
 import { museoModerno } from '@/lib/fonts';
 
 export default function Header() {
@@ -9,6 +10,7 @@ export default function Header() {
         <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: "14px", fontFamily: "inherit" }}>
           Plataforma de gestión de reservas y cobros
         </p>
+        <ThemeToggle />
       </header>
     );
   }
