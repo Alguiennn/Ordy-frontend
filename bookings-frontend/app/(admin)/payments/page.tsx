@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import TypewriterGreeting from '@/components/TypewriterGreeting';
 
 type PaymentStatus = "pending" | "paid";
@@ -6,13 +9,13 @@ type Payment = {
   id: string;
   client: string;
   business: string;
-  amount: string;
+  amount: string; // Se mantiene como string para respetar tu tipado actual
   method: string;
   date: string;
   status: PaymentStatus;
 };
 
-const payments: Payment[] = [
+const initialPayments: Payment[] = [
   {
     id: "COB-001",
     client: "María López",
@@ -90,6 +93,54 @@ function Badge({ status }: { status: PaymentStatus }) {
 }
 
 export default function PaymentsPage() {
+  // Pasamos el array estático a un estado mutable de React
+  const [paymentsList, setPaymentsList] = useState<Payment[]>(initialPayments);
+
+  // 🧮 FUNCIÓN AUXILIAR: Extrae el número puro de un string como "28 €"
+  const parseAmount = (amountStr: string): number => {
+    return parseFloat(amountStr.replace(/[^0-9.]/g, '')) || 0;
+  };
+
+  // 📊 CÁLCULOS AUTOMÁTICOS EN TIEMPO REAL
+
+  // 1. Filtrar transacciones pagadas y sumarlas
+  const paidPayments = paymentsList.filter((p) => p.status === "paid");
+  const totalCobrado = paidPayments.reduce((acc, curr) => acc + parseAmount(curr.amount), 0);
+  const totalOperacionesRegistradas = paidPayments.length;
+
+  // 2. Filtrar transacciones pendientes y sumarlas
+  const pendingPayments = paymentsList.filter((p) => p.status === "pending");
+  const totalPendiente = pendingPayments.reduce((acc, curr) => acc + parseAmount(curr.amount), 0);
+  const totalPendientesCount = pendingPayments.length;
+
+  // 3. Calcular método de pago más usado dinámicamente
+  const getMostUsedMethod = (): string => {
+    if (paymentsList.length === 0) return "Ninguno";
+    
+    // Contamos cuántas veces se repite cada método (solo de los que ya están pagados)
+    const counts: Record<string, number> = {};
+    paidPayments.forEach((p) => {
+      counts[p.method] = (counts[p.method] || 0) + 1;
+    });
+
+    // Buscamos el mayor
+    let mostUsed = "Ninguno";
+    let maxCount = 0;
+    Object.entries(counts).forEach(([method, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        mostUsed = method;
+      }
+    });
+    return mostUsed;
+  };
+
+  // 4. Calcular tasa de conversión (Pagados / Total)
+  const totalTransacciones = paymentsList.length;
+  const tasaConversion = totalTransacciones > 0 
+    ? Math.round((paidPayments.length / totalTransacciones) * 100) 
+    : 0;
+
   return (
     <div className="page-stack">
       <section className="page-hero">
@@ -99,7 +150,7 @@ export default function PaymentsPage() {
             messages={['Tus ingresos al día.', 'Controla cada transacción.']} 
             loop={false}
             pause={2500}
-            />
+          />
           <p>Seguimiento de cobros realizados y pendientes.</p>
         </div>
 
@@ -108,28 +159,37 @@ export default function PaymentsPage() {
         </button>
       </section>
 
+      {/* 🛠️ TARJETAS KPI VINCULADAS AUTOMÁTICAMENTE */}
       <section className="kpi-grid">
         <KpiCard
           title="Cobrado hoy"
-          value="171 €"
-          subtitle="4 operaciones registradas"
+          value={`${totalCobrado} €`}
+          subtitle={`${totalOperacionesRegistradas} operaciones registradas`}
           variant="positive"
         />
         <KpiCard
           title="Pendiente"
-          value="80 €"
-          subtitle="1 cobro por revisar"
-          variant="warning"
+          value={`${totalPendiente} €`}
+          subtitle={`${totalPendientesCount} ${totalPendientesCount === 1 ? 'cobro por revisar' : 'cobros por revisar'}`}
+          variant={totalPendiente > 0 ? "warning" : undefined}
         />
-        <KpiCard title="Método más usado" value="Tarjeta" subtitle="Mayor volumen del día" />
-        <KpiCard title="Conversión" value="84%" subtitle="Cobros cerrados hoy" />
+        <KpiCard 
+          title="Método más usado" 
+          value={getMostUsedMethod()} 
+          subtitle="Mayor volumen del día" 
+        />
+        <KpiCard 
+          title="Conversión" 
+          value={`${tasaConversion}%`} 
+          subtitle="Cobros cerrados hoy" 
+        />
       </section>
 
       <section className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">Listado de cobros</h3>
           <span style={{ color: "#6b7280", fontSize: 14 }}>
-            {payments.length} resultados
+            {paymentsList.length} resultados
           </span>
         </div>
 
@@ -146,7 +206,7 @@ export default function PaymentsPage() {
             </tr>
           </thead>
           <tbody>
-            {payments.map((payment) => (
+            {paymentsList.map((payment) => (
               <tr key={payment.id}>
                 <td style={{ fontWeight: 600 }}>{payment.id}</td>
                 <td>{payment.client}</td>
