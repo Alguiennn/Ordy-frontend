@@ -1,3 +1,5 @@
+import TypewriterGreeting from '@/components/TypewriterGreeting';
+
 const customers = [
   {
     id: "C-001",
@@ -48,7 +50,7 @@ export default function CustomersPage() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Customer directory</h2>
+          <TypewriterGreeting messages={['Directorio de clientes.', 'Almacena y gestiona comodamente los datos de tús clientes.']} loop={false} />
           <p>Gestión visual de clientes y próximas reservas.</p>
         </div>
 
