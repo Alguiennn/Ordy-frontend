@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { museoModerno } from '@/lib/fonts';
 import { getAppointments, getCustomers, getPayments, getBusinesses } from "@/lib/api";
 import type { BookingStatus, Booking } from "@/lib/api";
+import ExportReportButton from './ExportReportButton';
 
 function Badge({ status }: { status: BookingStatus }) {
   const label = status === 'pending' ? 'Pendiente' : status === 'confirmed' ? 'Confirmada' : 'Pagada';
@@ -88,7 +89,12 @@ export default async function DashboardPage() {
           <h2>Hola de nuevo :&#41;</h2>
           <p>Aquí tienes lo que está pasando en <span className={museoModerno.className}>Ordy</span> hoy.</p>
         </div>
-        <button className="primary-btn" type="button">Export report</button>
+        <ExportReportButton
+          bookings={bookings}
+          customers={customers}
+          businesses={businesses}
+          payments={payments}
+        />
       </section>
 
       <section className="kpi-grid">
