@@ -640,6 +640,8 @@ body {
 }
 
 .admin-header-top {
+  display: flex;
+  justify-content: space-between;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 20px 24px;
@@ -764,7 +766,6 @@ body {
 }
 
 .theme-toggle {
-  position: fixed;
   bottom: 640px;
   right: 24px;
   z-index: 100;
@@ -785,4 +786,129 @@ body {
 .theme-toggle:hover {
   transform: scale(1.1);
   box-shadow: 0 8px 32px rgba(48, 0, 240, 0.858);
-}   
+}
+
+/* ══════════════════════════════════════════════════════
+   SIDEBAR
+   ══════════════════════════════════════════════════════ */
+
+:root {
+  --sidebar-collapsed-width: 72px;
+  --sidebar-transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Sidebar transitions ── */
+.admin-sidebar {
+  transition:
+    width var(--sidebar-transition),
+    min-width var(--sidebar-transition),
+    padding var(--sidebar-transition);
+  overflow: hidden;
+}
+
+/* ── Header row: brand + toggle button ── */
+.admin-sidebar__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 8px;
+}
+
+/* ── Toggle button ── */
+.sidebar-toggle-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ── Nav item wrapper – needed for tooltip positioning ── */
+.sidebar-nav-item-wrapper {
+  position: relative;
+}
+
+/* ── Tooltip (shown on hover when collapsed) ── */
+.sidebar-tooltip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  z-index: 200;
+}
+
+/* Arrow pointing left */
+.sidebar-tooltip::before {
+  content: "";
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: var(--primary);
+}
+
+.sidebar-nav-item-wrapper:hover .sidebar-tooltip {
+  opacity: 1;
+}
+
+/* ══════════════════════════════════════════════════════
+   COLLAPSED STATE
+   ══════════════════════════════════════════════════════ */
+.admin-sidebar--collapsed {
+  width: var(--sidebar-collapsed-width) !important;
+  min-width: var(--sidebar-collapsed-width) !important;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* Center the toggle button when there's no brand next to it */
+.admin-sidebar--collapsed .admin-sidebar__header {
+  justify-content: center;
+}
+
+/* ── Dark mode ── */
+[data-theme="dark"] .sidebar-toggle-btn {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--muted);
+}
+
+[data-theme="dark"] .sidebar-toggle-btn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+[data-theme="dark"] .sidebar-tooltip {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+
+[data-theme="dark"] .sidebar-tooltip::before {
+  border-right-color: var(--surface-2);
+}

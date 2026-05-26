@@ -82,7 +82,6 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
 
   function prepareDto(formValues: typeof emptyForm): CreatePaymentDto {
     return {
-      // 🛠️ Mantenemos la Opción A: Autogeneramos un código automático invisible para cumplir el DTO del backend
       code: formValues.code || `COB-${Date.now().toString().slice(-6)}`,
       customerId: Number(formValues.customerId) || 1,
       businessId: Number(formValues.businessId) || 1,
@@ -134,10 +133,13 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
       setPayments(prev => prev.filter(p => p.id !== deleteTargetId));
       setSuccessMessage("Pago eliminado correctamente.");
       setDeleteTargetId(null);
-    } catch (err: any) { 
+    } catch (err: any) {
+      console.error("Error capturado al eliminar:", err);
       const backendMessage = err.response?.data?.message || err.message || "No se pudo eliminar";
       setErrorMessage(`Error al eliminar: ${backendMessage}`);
-    } finally { setDeletingId(null); }
+    } finally { 
+      setDeletingId(null); 
+    }
   }
 
   const updateCreateField = (key: keyof typeof emptyForm, val: any) => {
@@ -320,7 +322,6 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
 
         <table className="data-table">
           <thead>
-            {/* 🛠️ Columnas limpias alineadas con el tbody (7 columnas en total) */}
             <tr>
               <th>ID</th><th>Cliente</th><th>Comercio</th><th>Importe</th><th>Método</th><th>Fecha</th><th>Estado</th><th>Acciones</th>
             </tr>
@@ -328,58 +329,37 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
           <tbody>
             {payments.map(payment => (
               <tr key={payment.id}>
-                {/* 1. ID */}
                 <td style={{ fontWeight: 600 }}>{payment.id}</td>
                 
-                {/* 🛠️ FIX: Eliminamos la celda del código para que no desplace los datos */}
-                
-                {/* 2. Cliente */}
-              <td>
-                {(() => {
-                if (!payment.customerId) return "Sin Cliente";
-                // Si es un objeto (relación poblada por el backend)
-                if (typeof payment.customerId === 'object') {
-                return (payment.customerId as any).name || `ID: ${(payment.customerId as any).id}`;
-                }
-                // Si el backend lo devuelve en otra propiedad típica de NestJS como payment.customer
-                if ((payment as any).customer?.name) return (payment as any).customer.name;
-                if ((payment as any).customer?.id) return `ID: ${(payment as any).customer.id}`;
-    
-                // Si es un número plano o un string
-                return `ID: ${payment.customerId}`;
-                })()}
-              </td>
+                {/* Cliente */}
+                <td>
+                  {(() => {
+                    if (!payment.customerId) return "Sin Cliente";
+                    if (typeof payment.customerId === 'object') {
+                      return (payment.customerId as any).name || `ID: ${(payment.customerId as any).id}`;
+                    }
+                    if ((payment as any).customer?.name) return (payment as any).customer.name;
+                    return `ID: ${payment.customerId}`;
+                  })()}
+                </td>
 
-              {/* 3. Comercio */}
-              <td>
-                {(() => {
-                  if (!payment.businessId) return "Sin Comercio";
-                  // Si es un objeto (relación poblada por el backend)
-                  if (typeof payment.businessId === 'object') {
-                    return (payment.businessId as any).name || `ID: ${(payment.businessId as any).id}`;
-                  }
-                  // Si el backend lo devuelve en otra propiedad típica de NestJS como payment.business
-                  if ((payment as any).business?.name) return (payment as any).business.name;
-                  if ((payment as any).business?.id) return `ID: ${(payment as any).business.id}`;
-                  
-                  // Si es un número plano o un string
-                  return `ID: ${payment.businessId}`;
-                })()}
-              </td>
+                {/* Comercio */}
+                <td>
+                  {(() => {
+                    if (!payment.businessId) return "Sin Comercio";
+                    if (typeof payment.businessId === 'object') {
+                      return (payment.businessId as any).name || `ID: ${(payment.businessId as any).id}`;
+                    }
+                    if ((payment as any).business?.name) return (payment as any).business.name;
+                    return `ID: ${payment.businessId}`;
+                  })()}
+                </td>
                 
-                {/* 4. Importe */}
                 <td>{Number(payment.amount).toFixed(2)} €</td>
-                
-                {/* 5. Método */}
                 <td>{payment.method}</td>
-                
-                {/* 6. Fecha */}
                 <td>{payment.date}</td>
-                
-                {/* 7. Estado */}
                 <td><PaymentBadge status={payment.status} /></td>
                 
-                {/* 8. Acciones */}
                 <td>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button className="secondary-btn" onClick={() => openEditForm(payment)}>Editar</button>
