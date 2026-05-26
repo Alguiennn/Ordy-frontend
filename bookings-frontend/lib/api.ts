@@ -212,7 +212,7 @@ export interface Business {
 }
 
 export async function getBusinesses(): Promise<Business[]> {
-  const res = await fetch(`${API_URL}/businesses`, { cache: "no-store" });
+  const res = await fetch(`${API_URL}/business`, { cache: "no-store" });
   if (!res.ok) throw new Error("Error al obtener los negocios");
   return res.json();
 }

@@ -82,7 +82,7 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
     update: <K extends keyof CreatePaymentDto>(k: K, v: CreatePaymentDto[K]) => void;
   }) => (
     <div className="form-grid">
-      <input className="input" placeholder="Código (COB-001)" value={form.code} onChange={e => update("code", e.target.value)} required />
+      <input className="input" placeholder="Código (COB-001)" value={form.code} onChange={e => update("code", e.target.value)} />
       <input className="input" type="number" min={1} placeholder="Customer ID" value={form.customerId} onChange={e => update("customerId", Number(e.target.value))} required />
       <input className="input" type="number" min={1} placeholder="Business ID" value={form.businessId} onChange={e => update("businessId", Number(e.target.value))} required />
       <input className="input" type="number" min={0} step="0.01" placeholder="Importe" value={form.amount} onChange={e => update("amount", Number(e.target.value))} required />
