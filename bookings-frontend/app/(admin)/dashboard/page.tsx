@@ -1,14 +1,7 @@
 import Link from 'next/link';
 import { museoModerno } from '@/lib/fonts';
-import {
-  Booking,
-  BookingStatus,
-  getAppointments,
-  getPayments,
-  getBusinesses,
-  getCustomers,
-} from '@/lib/api';
-import ExportReportButton from './ExportReportButton';
+import TypewriterGreeting from '@/components/TypewriterGreeting';
+import { getAppointments, getCustomers, getPayments, BookingStatus, getBusinesses, Booking } from "@/lib/api";
 
 function Badge({ status }: { status: BookingStatus }) {
   const label =
@@ -50,6 +43,25 @@ function KpiCard({
     </div>
   );
 }
+export default async function DashboardPage() {
+  // 1. Llamadas a la API
+  const [appointments, payments] = await Promise.all([
+    getAppointments(),
+    getPayments(),
+  ]);
+
+  // 2. Calcular KPIs
+  const today = new Date().toISOString().split("T")[0]; // "2026-05-25"
+
+  const todayAppointments = appointments.filter(a => a.date === today);
+  const pendingCount = appointments.filter(a => a.status === "pending").length;
+  const todayRevenue = payments
+    .filter(p => p.date === today && p.status === "paid")
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+  const activeCustomers = new Set(appointments.map(a => a.customerId)).size;
+
+  // 3. Las últimas 5 reservas para la tabla
+  const recentAppointments = [...appointments].slice(0, 5);
 
 function formatMoney(amount: number) {
   return new Intl.NumberFormat('es-ES', {
@@ -153,11 +165,10 @@ export default async function DashboardPage() {
           <p>Aquí tienes lo que está pasando en <span className={museoModerno.className}>Ordy</span> hoy.</p>
         </div>
 
-        <div className="export-buttons" style={{ display: 'flex', gap: '0.75rem' }}>
-          <ExportReportButton bookings={bookings} customers={customers} businesses={businesses} payments={payments} />
-        </div>
+        <button className="primary-btn" type="button">Export report</button>
       </section>
 
+      {/* KPIs ahora con datos reales */}
       <section className="kpi-grid">
         <KpiCard
           title="Reservas hoy"
@@ -189,16 +200,12 @@ export default async function DashboardPage() {
             <h3 className="panel-title">Próximas reservas</h3>
             <Link href="/bookings" className="panel-subtle-link">
               Ver todas
-            </Link>
+            </Link>3
           </div>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Hora</th>
-                <th>Cliente</th>
-                <th>Comercio</th>
-                <th>Servicio</th>
-                <th>Estado</th>
+                <th>Hora</th><th>Servicio</th><th>Cliente</th><th>Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -226,6 +233,7 @@ export default async function DashboardPage() {
           </table>
         </div>
 
+        {/* Info boxes — estos sí los dejo estáticos o los puedes rellenar después */}
         <div className="info-stack">
           <div className="info-box">
             <p className="info-box__eyebrow">Siguiente reserva</p>
@@ -235,21 +243,31 @@ export default async function DashboardPage() {
                 ? `${nextBooking.time} · ${nextBookingBusiness ?? `Comercio ${nextBooking.businessId}`}`
                 : 'No hay reservas en agenda'}
             </p>
+            <p className="info-box__eyebrow">Total reservas</p>
+            <p className="info-box__title">{appointments.length}</p>
+            <p className="info-box__text">En toda la base de datos</p>
           </div>
-
           <div className="info-box">
             <p className="info-box__eyebrow">Comercio destacado</p>
             <p className="info-box__title">{featuredBusinessName}</p>
             <p className="info-box__text">{featuredBusinessCount} reservas hoy</p>
+            <p className="info-box__eyebrow">Pagos registrados</p>
+            <p className="info-box__title">{payments.length}</p>
+            <p className="info-box__text">Total de operaciones</p>
           </div>
-
           <div className="info-box">
             <p className="info-box__eyebrow">Recordatorios</p>
             <p className="info-box__title">{pendingToday} confirmaciones pendientes</p>
             <p className="info-box__text">Revisión recomendada esta mañana</p>
+            <p className="info-box__eyebrow">Pendientes de cobro</p>
+            <p className="info-box__title">
+              {payments.filter(p => p.status === "pending").reduce((sum, p) => sum + Number(p.amount), 0).toFixed(0)} €
+            </p>
+            <p className="info-box__text">Por revisar</p>
           </div>
         </div>
       </section>
     </div>
   );
+ }
 }
