@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import TypewriterGreeting from "@/components/TypewriterGreeting";
 import type {
   Booking,
   BookingStatus,
