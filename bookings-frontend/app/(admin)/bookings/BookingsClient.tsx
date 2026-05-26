@@ -64,11 +64,14 @@ export default function BookingsClient({
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   // Use improved API hooks with caching and retry logic
+  const fetchCustomers = useCallback(() => getCustomers(), []);
+  const fetchBusinesses = useCallback(() => getBusinesses(), []);
+
   const { data: customersData = [], loading: customersLoading, error: customersError, refetch: refetchCustomers } = 
-    useApi<Customer[]>(() => getCustomers(), 'customers', { cacheTime: 10 * 60 * 1000 });
+    useApi<Customer[]>(fetchCustomers, 'customers', { cacheTime: 10 * 60 * 1000 });
   
   const { data: businessesData = [], loading: businessesLoading, error: businessesError, refetch: refetchBusinesses } = 
-    useApi<Business[]>(() => getBusinesses(), 'businesses', { cacheTime: 10 * 60 * 1000 });
+    useApi<Business[]>(fetchBusinesses, 'businesses', { cacheTime: 10 * 60 * 60 * 1000 });
 
   const customers = customersData || [];
   const businesses = businessesData || [];
