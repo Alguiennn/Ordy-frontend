@@ -103,7 +103,7 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
           <p>Registro de cobros conectado con la API.</p>
         </div>
         <button className="primary-btn" type="button" onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}>
-          Registrar cobro
+          Registrar cobro 💵
         </button>
       </section>
 

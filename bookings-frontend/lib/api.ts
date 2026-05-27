@@ -41,7 +41,8 @@ export async function getAppointments(): Promise<Booking[]> {
     throw new Error("Error al obtener las reservas");
   }
 
-  return res.json();
+  const data: Booking[] = await res.json();
+  return data.sort((a, b) => a.id - b.id);
 }
 
 export async function createAppointment(data: CreateBookingDto): Promise<Booking> {
@@ -92,6 +93,7 @@ export async function deleteAppointment(
 
   return res.json();
 }
+
 // Customers - Clientes
 
 export interface Customer {
@@ -116,7 +118,8 @@ export interface UpdateCustomerDto extends Partial<CreateCustomerDto> {}
 export async function getCustomers(): Promise<Customer[]> {
   const res = await fetch(`${API_URL}/customers`, { cache: "no-store" });
   if (!res.ok) throw new Error("Error al obtener los clientes");
-  return res.json();
+  const data: Customer[] = await res.json();
+  return data.sort((a, b) => a.id - b.id);
 }
 
 export async function createCustomer(data: CreateCustomerDto): Promise<Customer> {
@@ -175,7 +178,8 @@ export interface UpdatePaymentDto extends Partial<CreatePaymentDto> {}
 export async function getPayments(): Promise<Payment[]> {
   const res = await fetch(`${API_URL}/payments`, { cache: "no-store" });
   if (!res.ok) throw new Error("Error al obtener los pagos");
-  return res.json();
+  const data: Payment[] = await res.json();
+  return data.sort((a, b) => a.id - b.id);
 }
 
 export async function createPayment(data: CreatePaymentDto): Promise<Payment> {
@@ -211,8 +215,43 @@ export interface Business {
   name: string;
 }
 
+export interface CreateBusinessDto {
+  name: string;
+}
+
+export interface UpdateBusinessDto {
+  name?: string;
+}
+
 export async function getBusinesses(): Promise<Business[]> {
   const res = await fetch(`${API_URL}/business`, { cache: "no-store" });
   if (!res.ok) throw new Error("Error al obtener los negocios");
+  const data: Business[] = await res.json();
+  return data.sort((a, b) => a.id - b.id);
+}
+
+export async function createBusiness(data: CreateBusinessDto): Promise<Business> {
+  const res = await fetch(`${API_URL}/business`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al crear el negocio");
+  return res.json();
+}
+
+export async function updateBusiness(id: number, data: UpdateBusinessDto): Promise<Business> {
+  const res = await fetch(`${API_URL}/business/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al editar el negocio");
+  return res.json();
+}
+
+export async function deleteBusiness(id: number): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/business/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Error al eliminar el negocio");
   return res.json();
 }

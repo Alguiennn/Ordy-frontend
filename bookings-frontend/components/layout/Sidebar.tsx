@@ -9,8 +9,9 @@ import Image from "next/image";
 const menuItems = [
   { label: "Vista General", href: "/dashboard",  icon: "/icons/vistaGeneral.png" },
   { label: "Reservas",      href: "/bookings",   icon: "/icons/reserva1.png"     },
-  { label: "Clientes",      href: "/customers",  icon: "/icons/cliente.png"      },
-  { label: "Pagos",         href: "/payments",   icon: "/icons/pagos.png"        },
+  { label: "Clientes",      href: "/customers",   icon: "/icons/cliente.png"      },
+  { label: "Negocios",      href: "/businesses",  icon: "/icons/business.png"     },
+  { label: "Pagos",         href: "/payments",    icon: "/icons/pagos.png"        },
 ];
 
 // ── Toggle icons ─────────────────────────────────────────────────────────────

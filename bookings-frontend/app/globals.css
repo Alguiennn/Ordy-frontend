@@ -912,3 +912,11 @@ body {
 [data-theme="dark"] .sidebar-tooltip::before {
   border-right-color: var(--surface-2);
 }
+
+/* ── Active filter pill ── */
+.filter-pill--active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  font-weight: 600;
+}
