@@ -9,15 +9,14 @@ import Image from "next/image";
 const menuItems = [
   { label: "Vista General", href: "/dashboard",  icon: "/icons/vistaGeneral.png" },
   { label: "Reservas",      href: "/bookings",   icon: "/icons/reserva1.png"     },
-  { label: "Clientes",      href: "/customers",   icon: "/icons/cliente.png"      },
-  { label: "Negocios",      href: "/businesses",  icon: "/icons/business.png"     },
-  { label: "Pagos",         href: "/payments",    icon: "/icons/pagos.png"        },
+  { label: "Clientes",      href: "/customers",  icon: "/icons/cliente.png"      },
+  { label: "Negocios",      href: "/businesses", icon: "/icons/business.png"     },
+  { label: "Pagos",         href: "/payments",   icon: "/icons/pagos.png"        },
 ];
 
-// ── Toggle icons ─────────────────────────────────────────────────────────────
 function CollapseIcon() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <path d="M9 3v18" />
@@ -28,7 +27,7 @@ function CollapseIcon() {
 
 function ExpandIcon() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <path d="M9 3v18" />
@@ -45,7 +44,6 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mounted,   setMounted]   = useState(false);
 
-  // Restore saved preference on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "true") setCollapsed(true);
@@ -65,52 +63,34 @@ export default function Sidebar() {
     router.push("/login");
   }
 
-  // Prevent flash of wrong sidebar width on first render
   if (!mounted) return null;
 
   return (
-    <aside
-      className={`admin-sidebar${collapsed ? " admin-sidebar--collapsed" : ""}`}
-    >
-      {/* ── Brand + toggle ───────────────────────────────────────────────── */}
+    <aside className={`admin-sidebar${collapsed ? " admin-sidebar--collapsed" : ""}`}>
+      
+      {/* ── HEADER DE MARCA (Simétrico y Proporcional) ── */}
       <div className="admin-sidebar__header">
-
-        {/* Brand text – fades out when collapsed */}
-        <div
-          className="admin-sidebar__brand"
-          style={{
-            overflow: "hidden",
-            transition: "opacity 0.22s ease, width 0.22s ease",
-            opacity: collapsed ? 0 : 1,
-            width: collapsed ? 0 : "auto",
-            pointerEvents: collapsed ? "none" : "auto",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", marginLeft: "35px" }}>
-            <Image
-              src="/logo.svg"
-              alt="Ordy logo"
-              width={52}
-              height={52}
-              priority
-              style={{ objectFit: "contain" }}
-            />
-            <h2
-              className={`${museoModerno.className} admin-sidebar__title`}
-              style={{ fontSize: "32px", lineHeight: "1.2", margin: 0 }}
-            >
-              Ordy
-            </h2>
-          </div>
-          <p
-            className={`${museoModerno.className} admin-sidebar__subtitle`}
-            style={{ fontSize: "16px", lineHeight: "1.2", marginLeft: "30px" }}
-          >
-            Admin workspace
-          </p>
+        <div className="admin-sidebar__brand-container">
+          <Image
+            src="/logo.svg"
+            alt="Ordy logo"
+            width={44}
+            height={44}
+            priority
+            className="admin-sidebar__logo"
+          />
+          {!collapsed && (
+            <div className="admin-sidebar__brand-text">
+              <h2 className={`${museoModerno.className} admin-sidebar__title`}>
+                Ordy
+              </h2>
+              <p className={`${museoModerno.className} admin-sidebar__subtitle`}>
+                Admin workspace
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Toggle button */}
         <button
           className="sidebar-toggle-btn"
           onClick={toggle}
@@ -121,7 +101,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* ── Navigation ───────────────────────────────────────────────────── */}
+      {/* ── NAVEGACIÓN PRINCIPAL ── */}
       <nav className="admin-sidebar__nav">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
@@ -131,10 +111,8 @@ export default function Sidebar() {
               <Link
                 href={item.href}
                 className={`${museoModerno.className} admin-sidebar__link${isActive ? " admin-sidebar__link--active" : ""}`}
-                style={collapsed ? { marginLeft: 0, justifyContent: "center" } : { fontSize: "15px", marginLeft: "20px" }}
               >
-                {/* PNG icon – always visible */}
-                <span style={{ width: "24px", display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                <span className="admin-sidebar__icon-box">
                   <Image
                     src={item.icon}
                     alt={item.label}
@@ -144,20 +122,13 @@ export default function Sidebar() {
                   />
                 </span>
 
-                {/* Label – fades out when collapsed */}
-                <span
-                  style={{
-                    overflow: "hidden",
-                    transition: "opacity 0.18s ease, max-width 0.22s ease",
-                    opacity: collapsed ? 0 : 1,
-                    maxWidth: collapsed ? 0 : "200px",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.label}
-                </span>
+                {!collapsed && (
+                  <span className="admin-sidebar__label-text">
+                    {item.label}
+                  </span>
+                )}
               </Link>
-              {/* Tooltip – only rendered when collapsed */}
+              
               {collapsed && (
                 <span className="sidebar-tooltip" role="tooltip">
                   {item.label}
@@ -167,19 +138,23 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* ── FOOTER DE SESIÓN ── */}
       <div className="admin-sidebar__footer">
         <button
           className="sidebar-logout-btn"
           onClick={handleLogout}
           title="Cerrar sesión"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          {!collapsed && <span>Cerrar sesión</span>}
+          <span className="admin-sidebar__icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </span>
+          {!collapsed && <span className="admin-sidebar__label-text">Cerrar sesión</span>}
         </button>
       </div>
     </aside>
