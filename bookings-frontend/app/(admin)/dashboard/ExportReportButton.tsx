@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Booking, Business, Customer, Payment } from '@/lib/api';
 import {
   downloadDocx,
@@ -18,6 +18,19 @@ type ExportReportButtonProps = {
 
 type ExportPage = 'bookings' | 'customers' | 'businesses' | 'payments' | 'all';
 type ExportFormat = 'xlsx' | 'docx' | 'pdf' | 'jpg';
+
+/* ─── Dark mode hook ──────────────────────────────────────── */
+function useDarkMode() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.getAttribute('data-theme') === 'dark');
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+  return dark;
+}
 
 const pages: { id: ExportPage; label: string; sub: string }[] = [
   { id: 'bookings',   label: 'Reservas',         sub: 'Citas y horarios'       },
@@ -246,6 +259,7 @@ export default function ExportReportButton({
   const [format, setFormat]   = useState<ExportFormat>('xlsx');
   const [loading, setLoading] = useState(false);
   const jpgRef = useRef<HTMLDivElement>(null);
+  const dark = useDarkMode();
 
   function close() { setOpen(false); }
 
@@ -300,9 +314,10 @@ export default function ExportReportButton({
           cursor: 'pointer',
           letterSpacing: '-0.01em',
           whiteSpace: 'nowrap',
+          transition: 'background 0.2s ease, color 0.2s ease',
         }}
       >
-        Exportar informe
+        Exportar informe ➜]
       </button>
 
       {/* ── Hidden JPG capture node — off-screen ── */}
@@ -351,7 +366,7 @@ export default function ExportReportButton({
             role="dialog"
             aria-modal
             aria-label="Exportar informe"
-            className="ordy-export-dialog"
+            className={dark ? "ordy-export-dialog ordy-export-dialog--dark" : "ordy-export-dialog"}
           >
             {/* ── Header (sticky) ── */}
             <div
@@ -379,8 +394,8 @@ export default function ExportReportButton({
                 onClick={close}
                 aria-label="Cerrar"
                 style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  background: dark ? '#1e2535' : '#f8fafc',
+                  border: dark ? '1px solid #1f2937' : '1px solid #e2e8f0',
                   borderRadius: 8,
                   width: 30,
                   height: 30,
@@ -434,9 +449,9 @@ export default function ExportReportButton({
                           width: '100%',
                           padding: '10px 12px',
                           borderRadius: 9,
-                          border: active ? '1px solid #c7d7fd' : '1px solid transparent',
-                          background: active ? '#eef2ff' : 'transparent',
-                          color: active ? '#3730a3' : '#475569',
+                          border: active ? (dark ? '1px solid #3b82f6' : '1px solid #c7d7fd') : '1px solid transparent',
+                          background: active ? (dark ? '#1e3a8a' : '#eef2ff') : 'transparent',
+                          color: active ? (dark ? '#bfdbfe' : '#3730a3') : (dark ? '#94a3b8' : '#475569'),
                           cursor: 'pointer',
                           textAlign: 'left',
                           transition: 'all 0.1s',
@@ -445,7 +460,7 @@ export default function ExportReportButton({
                         }}
                       >
                         <span style={{ fontSize: 14, fontWeight: active ? 600 : 400 }}>{p.label}</span>
-                        <span style={{ fontSize: 11, color: active ? '#6366f1' : '#94a3b8' }}>{p.sub}</span>
+                        <span style={{ fontSize: 11, color: active ? (dark ? '#93c5fd' : '#6366f1') : '#94a3b8' }}>{p.sub}</span>
                       </button>
                     );
                   })}
@@ -470,8 +485,8 @@ export default function ExportReportButton({
                           padding: '12px 8px',
                           borderRadius: 9,
                           border: active ? '1px solid #0f172a' : '1px solid #e2e8f0',
-                          background: active ? '#0f172a' : '#f8fafc',
-                          color: active ? '#ffffff' : '#475569',
+                          background: active ? (dark ? '#3b82f6' : '#0f172a') : (dark ? '#1e2535' : '#f8fafc'),
+                          color: active ? '#ffffff' : (dark ? '#94a3b8' : '#475569'),
                           cursor: 'pointer',
                           fontWeight: active ? 700 : 500,
                           fontSize: 14,
@@ -492,8 +507,8 @@ export default function ExportReportButton({
               {/* File preview card */}
               <div
                 style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  background: dark ? '#1e2535' : '#f8fafc',
+                  border: dark ? '1px solid #1f2937' : '1px solid #e2e8f0',
                   borderRadius: 12,
                   padding: '14px 16px',
                   display: 'flex',
@@ -504,19 +519,19 @@ export default function ExportReportButton({
               >
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>Archivo generado</p>
-                  <p style={{ margin: '3px 0 0', fontSize: 15, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', wordBreak: 'break-all' }}>
+                  <p style={{ margin: '3px 0 0', fontSize: 15, fontWeight: 700, color: dark ? '#f1f5f9' : '#0f172a', letterSpacing: '-0.01em', wordBreak: 'break-all' }}>
                     {fileName}
                   </p>
                   <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>{dateStr} · {selPage.label}</p>
                 </div>
                 <div
                   style={{
-                    background: '#e2e8f0',
+                    background: dark ? '#374151' : '#e2e8f0',
                     borderRadius: 7,
                     padding: '5px 11px',
                     fontSize: 12,
                     fontWeight: 700,
-                    color: '#334155',
+                    color: dark ? '#f1f5f9' : '#334155',
                     flexShrink: 0,
                   }}
                 >
@@ -529,7 +544,7 @@ export default function ExportReportButton({
             <div
               style={{
                 padding: '12px 20px 16px',
-                borderTop: '1px solid #f1f5f9',
+                borderTop: dark ? '1px solid #1f2937' : '1px solid #f1f5f9',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -549,9 +564,9 @@ export default function ExportReportButton({
                   style={{
                     padding: '9px 16px',
                     borderRadius: 9,
-                    border: '1px solid #e2e8f0',
-                    background: '#ffffff',
-                    color: '#475569',
+                    border: dark ? '1px solid #374151' : '1px solid #e2e8f0',
+                    background: dark ? '#1e2535' : '#ffffff',
+                    color: dark ? '#94a3b8' : '#475569',
                     fontSize: 13,
                     fontWeight: 500,
                     cursor: 'pointer',
@@ -665,6 +680,14 @@ export default function ExportReportButton({
               .ordy-export-dialog {
                 max-height: calc(100dvh - 48px);
               }
+            }
+
+            /* ── Dark mode dialog ── */
+            .ordy-export-dialog--dark {
+              background: #161b27 !important;
+              border-color: #1f2937 !important;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3) !important;
+              color: #f1f5f9;
             }
           `}</style>
         </>

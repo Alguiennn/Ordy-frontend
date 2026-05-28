@@ -1147,8 +1147,14 @@ select {
     padding: 4px;
   }
 
-  /* Aseguramos que el contenido principal no quede tapado por el botón flotante */
-  .admin-content {
-    padding-top: 70px !important; 
-  }
+[data-theme="dark"] .sidebar-tooltip::before {
+  border-right-color: var(--surface-2);
+}
+
+/* ── Active filter pill ── */
+.filter-pill--active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  font-weight: 600;
 }

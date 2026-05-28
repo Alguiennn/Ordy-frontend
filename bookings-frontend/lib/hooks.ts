@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 
 interface CacheEntry<T> {
   data: T;
@@ -31,11 +31,19 @@ export function useApi<T>(
   cacheKey: string,
   options: UseApiOptions = {}
 ) {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const opts = useMemo(
+    () => ({ ...DEFAULT_OPTIONS, ...options }),
+    [options?.cacheTime, options?.retryDelay, options?.retries, options?.timeout]
+  );
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const isMountedRef = useRef(true);
+  const fetchFnRef = useRef(fetchFn);
+
+  useEffect(() => {
+    fetchFnRef.current = fetchFn;
+  }, [fetchFn]);
 
   const fetchWithRetry = useCallback(
     async (attemptNumber = 0): Promise<T> => {
@@ -60,7 +68,7 @@ export function useApi<T>(
         );
 
         const fetchPromise = Promise.race([
-          fetchFn(),
+          fetchFnRef.current(),
           timeoutPromise,
         ]);
 
@@ -76,7 +84,7 @@ export function useApi<T>(
         });
 
         pendingRequests.delete(cacheKey);
-        return result;
+        return fetchPromise;
       } catch (err) {
         pendingRequests.delete(cacheKey);
 
@@ -99,7 +107,7 @@ export function useApi<T>(
         throw error;
       }
     },
-    [cacheKey, fetchFn, opts]
+    [cacheKey, opts]
   );
 
   useEffect(() => {

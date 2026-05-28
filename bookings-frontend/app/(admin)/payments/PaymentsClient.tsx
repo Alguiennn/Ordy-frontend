@@ -163,7 +163,7 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
           <p>Registro y gestión de cobros con validación en tiempo real.</p>
         </div>
         <button className="primary-btn" type="button" onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}>
-          Registrar cobro
+          Registrar cobro 💵
         </button>
       </section>
 

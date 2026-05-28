@@ -1,32 +1,65 @@
 "use client";
 
-import { useState } from "react";
-import type { Customer, CreateCustomerDto, UpdateCustomerDto } from "@/lib/api";
-import { createCustomer, updateCustomer, deleteCustomer } from "@/lib/api";
+import { useState, useEffect, useCallback } from "react";
+import type { Customer, CreateCustomerDto, Business } from "@/lib/api";
+import { createCustomer, updateCustomer, deleteCustomer, getBusinesses } from "@/lib/api";
 
 export default function CustomersClient({ initialCustomers }: { initialCustomers: Customer[] }) {
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+
+  // Load businesses for filter pills + form dropdown
+  useEffect(() => {
+    getBusinesses().then(setBusinesses).catch(() => {});
+  }, []);
+
+  // Helper: business name from id
+  const businessName = useCallback(
+    (id: number) => businesses.find(b => b.id === id)?.name ?? `Business ${id}`,
+    [businesses]
+  );
 
   const emptyForm: CreateCustomerDto = {
-    code: "", name: "", phone: "", email: "", businessId: 1,
+    code: "", name: "", phone: "", email: "", businessId: businesses[0]?.id ?? 1,
   };
 
   const [createForm, setCreateForm] = useState<CreateCustomerDto>(emptyForm);
-  const [editForm, setEditForm] = useState<CreateCustomerDto>(emptyForm);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm]     = useState<CreateCustomerDto>(emptyForm);
+  const [isCreateOpen, setIsCreateOpen]   = useState(false);
+  const [editingId, setEditingId]         = useState<number | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId]       = useState<number | null>(null);
   const [loadingCreate, setLoadingCreate] = useState(false);
-  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [loadingEdit, setLoadingEdit]     = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage]     = useState("");
+  const [search, setSearch]               = useState("");
+  const [businessFilter, setBusinessFilter] = useState<number | "all">("all");
+
+  // Filtered list
+  const filteredCustomers = customers.filter(c => {
+    const matchesBusiness = businessFilter === "all" || c.businessId === businessFilter;
+    const q = search.toLowerCase();
+    const matchesSearch =
+      !q ||
+      (c.name  ?? "").toLowerCase().includes(q) ||
+      (c.email ?? "").toLowerCase().includes(q) ||
+      (c.code  ?? "").toLowerCase().includes(q) ||
+      (c.phone ?? "").toLowerCase().includes(q);
+    return matchesBusiness && matchesSearch;
+  });
 
   function openEditForm(customer: Customer) {
     setErrorMessage(""); setSuccessMessage("");
     setIsCreateOpen(false); setDeleteTargetId(null);
     setEditingId(customer.id);
-    setEditForm({ code: customer.code, name: customer.name, phone: customer.phone, email: customer.email, businessId: customer.businessId });
+    setEditForm({
+      code:       customer.code  ?? "",
+      name:       customer.name  ?? "",
+      phone:      customer.phone ?? "",
+      email:      customer.email ?? "",
+      businessId: customer.businessId,
+    });
   }
 
   async function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -34,7 +67,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
     setLoadingCreate(true); setErrorMessage(""); setSuccessMessage("");
     try {
       const created = await createCustomer(createForm);
-      setCustomers(prev => [created, ...prev]);
+      setCustomers(prev => [...prev, created].sort((a, b) => a.id - b.id));
       setCreateForm(emptyForm); setIsCreateOpen(false);
       setSuccessMessage("Cliente creado correctamente.");
     } catch { setErrorMessage("No se pudo crear el cliente."); }
@@ -66,31 +99,92 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
     finally { setDeletingId(null); }
   }
 
-  const FormFields = ({ form, update }: {
+  // ── Shared form fields ────────────────────────────────────────────────────
+  const FormFields = ({
+    form,
+    update,
+  }: {
     form: CreateCustomerDto;
     update: <K extends keyof CreateCustomerDto>(k: K, v: CreateCustomerDto[K]) => void;
   }) => (
     <div className="form-grid">
-      <input className="input" placeholder="Código (C-001)" value={form.code} onChange={e => update("code", e.target.value)} required />
-      <input className="input" placeholder="Nombre" value={form.name} onChange={e => update("name", e.target.value)} required />
-      <input className="input" placeholder="Teléfono" value={form.phone ?? ""} onChange={e => update("phone", e.target.value)} />
-      <input className="input" type="email" placeholder="Email" value={form.email} onChange={e => update("email", e.target.value)} required />
-      <input className="input" type="number" min={1} placeholder="Business ID" value={form.businessId} onChange={e => update("businessId", Number(e.target.value))} required />
+      <input
+        className="input"
+        placeholder="Código (C-001)"
+        value={form.code ?? ""}
+        onChange={e => update("code", e.target.value)}
+        required
+      />
+      <input
+        className="input"
+        placeholder="Nombre"
+        value={form.name ?? ""}
+        onChange={e => update("name", e.target.value)}
+        required
+      />
+      <input
+        className="input"
+        placeholder="Teléfono"
+        value={form.phone ?? ""}
+        onChange={e => update("phone", e.target.value)}
+      />
+      <input
+        className="input"
+        type="email"
+        placeholder="Email"
+        value={form.email ?? ""}
+        onChange={e => update("email", e.target.value)}
+        required
+      />
+
+      {/* Business selector — shows names when loaded, falls back to number input */}
+      {businesses.length > 0 ? (
+        <select
+          className="select"
+          value={form.businessId}
+          onChange={e => update("businessId", Number(e.target.value))}
+          required
+        >
+          <option value="">Selecciona negocio</option>
+          {businesses.map(b => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      ) : (
+        <input
+          className="input"
+          type="number"
+          min={1}
+          placeholder="Business ID"
+          value={form.businessId}
+          onChange={e => update("businessId", Number(e.target.value))}
+          required
+        />
+      )}
     </div>
   );
 
+  // ── Unique businessIds present in current customers (for pills) ───────────
+  const presentBusinessIds = Array.from(new Set(customers.map(c => c.businessId))).sort((a, b) => a - b);
+
   return (
     <div className="page-stack">
+      {/* ── Hero ── */}
       <section className="page-hero">
         <div>
           <h2>Clientes</h2>
           <p>Directorio de clientes conectado con la API.</p>
         </div>
-        <button className="primary-btn" type="button" onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}>
-          Nuevo cliente
+        <button
+          className="primary-btn"
+          type="button"
+          onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}
+        >
+          Nuevo cliente ✚
         </button>
       </section>
 
+      {/* ── Create form ── */}
       {isCreateOpen && (
         <section className="section-card">
           <div className="panel-title-row">
@@ -109,6 +203,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
         </section>
       )}
 
+      {/* ── Edit form ── */}
       {editingId !== null && (
         <section className="section-card">
           <div className="panel-title-row">
@@ -127,12 +222,20 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
         </section>
       )}
 
+      {/* ── Delete modal ── */}
       {deleteTargetId !== null && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={e => { if (e.target === e.currentTarget) setDeleteTargetId(null); }}>
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          onClick={e => { if (e.target === e.currentTarget) setDeleteTargetId(null); }}
+        >
           <div className="modal-card">
             <div className="modal-icon">!</div>
             <h3 className="modal-title">Eliminar cliente</h3>
-            <p className="modal-text">¿Seguro que quieres eliminar el cliente #{deleteTargetId}? Esta acción no se puede deshacer.</p>
+            <p className="modal-text">
+              ¿Seguro que quieres eliminar el cliente #{deleteTargetId}? Esta acción no se puede deshacer.
+            </p>
             <div className="modal-actions">
               <button className="secondary-btn" onClick={() => setDeleteTargetId(null)}>Cancelar</button>
               <button className="danger-btn" onClick={confirmDelete} disabled={deletingId === deleteTargetId}>
@@ -143,38 +246,100 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
         </div>
       )}
 
+      {/* ── Table ── */}
       <section className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">Clientes registrados</h3>
-          <span style={{ color: "var(--muted)", fontSize: 13 }}>{customers.length} registros</span>
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>
+            {filteredCustomers.length} de {customers.length} registros
+          </span>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16, alignItems: "center" }}>
+          <input
+            className="input"
+            style={{ maxWidth: 240, padding: "8px 14px", fontSize: 13 }}
+            placeholder="Buscar nombre, email, código..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className={`filter-pill${businessFilter === "all" ? " filter-pill--active" : ""}`}
+              onClick={() => setBusinessFilter("all")}
+            >
+              Todos
+            </button>
+            {presentBusinessIds.map(id => (
+              <button
+                key={`biz-${id}`}
+                type="button"
+                className={`filter-pill${businessFilter === id ? " filter-pill--active" : ""}`}
+                onClick={() => setBusinessFilter(id)}
+              >
+                {businessName(id)}
+              </button>
+            ))}
+          </div>
+
+          {(search || businessFilter !== "all") && (
+            <button
+              type="button"
+              className="secondary-btn"
+              style={{ padding: "6px 12px", fontSize: 12 }}
+              onClick={() => { setSearch(""); setBusinessFilter("all"); }}
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
 
         {successMessage && <div className="message-success" style={{ marginBottom: 12 }}>{successMessage}</div>}
-        {errorMessage && <div className="message-error" style={{ marginBottom: 12 }}>{errorMessage}</div>}
+        {errorMessage   && <div className="message-error"   style={{ marginBottom: 12 }}>{errorMessage}</div>}
 
         <table className="data-table">
           <thead>
             <tr>
-              <th>ID</th><th>Código</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Business</th><th>Acciones</th>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>Email</th>
+              <th>Negocio</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {customers.map(customer => (
+            {filteredCustomers.length > 0 ? filteredCustomers.map(customer => (
               <tr key={customer.id}>
                 <td style={{ fontWeight: 600 }}>{customer.id}</td>
                 <td>{customer.code}</td>
                 <td>{customer.name}</td>
                 <td>{customer.phone}</td>
                 <td>{customer.email}</td>
-                <td>{customer.businessId}</td>
+                <td>{businessName(customer.businessId)}</td>
                 <td>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button className="secondary-btn" onClick={() => openEditForm(customer)}>Editar</button>
-                    <button className="secondary-btn" onClick={() => { setDeleteTargetId(customer.id); setErrorMessage(""); setSuccessMessage(""); }}>Eliminar</button>
+                    <button
+                      className="secondary-btn"
+                      onClick={() => { setDeleteTargetId(customer.id); setErrorMessage(""); setSuccessMessage(""); }}
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan={7} style={{ textAlign: "center", padding: "24px", color: "var(--muted)", fontSize: "0.88rem" }}>
+                  📭 No hay clientes que coincidan con los filtros
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>
