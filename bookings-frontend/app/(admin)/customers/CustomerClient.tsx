@@ -180,7 +180,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
           type="button"
           onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}
         >
-          Nuevo cliente ✚
+          Nuevo cliente
         </button>
       </section>
 

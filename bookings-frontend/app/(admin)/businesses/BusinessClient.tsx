@@ -80,7 +80,7 @@ export default function BusinessClient({ initialBusinesses }: { initialBusinesse
           type="button"
           onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}
         >
-          + Nuevo negocio
+          Nuevo negocio
         </button>
       </section>
 
