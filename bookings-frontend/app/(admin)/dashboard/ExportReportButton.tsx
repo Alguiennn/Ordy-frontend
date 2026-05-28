@@ -296,19 +296,20 @@ export default function ExportReportButton({
   return (
     <>
       {/* ── Trigger button ── */}
-      <button
+      <button 
         type="button"
+        className="primary-btn"
         onClick={() => setOpen(true)}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: 8,
-          padding: '10px 20px',
-          background: dark ? '#1E40AF' : '#0f172a',
-          color: dark ? '#ffffff' : '#f8f8f8',
-          border: dark ? '1px solid rgba(255,255,255,0.12)' : 'none',
-          borderRadius: 10,
-          fontSize: 14,
+          padding: '12px 18px',
+          background: 'primary',
+          color: 'primary',
+          border: 'none',
+          borderRadius: 14,
+          fontSize: 16,
           fontWeight: 600,
           cursor: 'pointer',
           letterSpacing: '-0.01em',
