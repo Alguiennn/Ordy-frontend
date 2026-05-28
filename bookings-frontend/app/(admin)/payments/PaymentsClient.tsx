@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Payment, CreatePaymentDto, UpdatePaymentDto, PaymentStatus } from "@/lib/api";
-import { createPayment, updatePayment, deletePayment } from "@/lib/api";
+import type { Payment, CreatePaymentDto, UpdatePaymentDto, PaymentStatus } from "@/lib/api.ts.cpy";
+import { createPayment, updatePayment, deletePayment } from "@/lib/api.ts.cpy";
 
 function PaymentBadge({ status }: { status: PaymentStatus }) {
   return (

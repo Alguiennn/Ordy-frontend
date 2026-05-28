@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { museoModerno } from '@/lib/fonts';
 import { getAppointments, getCustomers, getPayments, getBusinesses } from "@/lib/api";
-import type { BookingStatus, Booking } from "@/lib/api";
+import type { BookingStatus, Booking } from "@/lib/api.ts";
 import ExportReportButton from './ExportReportButton';
 
 function Badge({ status }: { status: BookingStatus }) {

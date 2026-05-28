@@ -1,4 +1,4 @@
-import { getPayments } from "@/lib/api";
+import { getPayments } from "@/lib/api.ts.cpy";
 import PaymentsClient from "./PaymentsClient";
 
 export default async function PaymentsPage() {
