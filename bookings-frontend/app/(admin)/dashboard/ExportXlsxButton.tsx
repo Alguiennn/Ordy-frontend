@@ -1,7 +1,7 @@
 'use client';
 
 import * as XLSX from 'xlsx';
-import { Booking, Business, Customer } from '@/lib/api';
+import { Booking, Business, Customer } from '@/lib/api.ts.cpy';
 
 type Props = {
   bookings: Booking[];

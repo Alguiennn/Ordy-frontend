@@ -98,7 +98,8 @@ export interface Customer {
   name: string;
   phone: string;
   email: string;
-  businessId: number;
+  businessId: number | null;    // extracted from nested relation
+  businessName?: string | null; // extracted from nested relation
 }
 
 export interface CreateCustomerDto {
@@ -114,7 +115,14 @@ export interface UpdateCustomerDto extends Partial<CreateCustomerDto> {}
 export async function getCustomers(): Promise<Customer[]> {
   const res = await fetch(`${API_URL}/customers`, { cache: "no-store" });
   if (!res.ok) throw new Error("Error al obtener los clientes");
-  const data: Customer[] = await res.json();
+  const raw = await res.json();
+  // The backend returns business as a nested relation object: { business: { id, name } }
+  // We normalise it so the frontend can use businessId and businessName directly.
+  const data: Customer[] = raw.map((c: any) => ({
+    ...c,
+    businessId:   c.business?.id   ?? c.businessId   ?? null,
+    businessName: c.business?.name ?? c.businessName  ?? null,
+  }));
   return data.sort((a, b) => a.id - b.id);
 }
 
@@ -124,6 +132,13 @@ export async function createCustomer(data: CreateCustomerDto): Promise<Customer>
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+  if (!res.ok) throw new Error("Error al crear el cliente");
+  const raw = await res.json();
+  return {
+    ...raw,
+    businessId:   raw.business?.id   ?? raw.businessId   ?? null,
+    businessName: raw.business?.name ?? raw.businessName  ?? null,
+  };
   if (!res.ok) await handleBackendError(res, "Error al crear el cliente");
   return res.json();
 }
@@ -134,6 +149,13 @@ export async function updateCustomer(id: number, data: UpdateCustomerDto): Promi
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+  if (!res.ok) throw new Error("Error al editar el cliente");
+  const raw = await res.json();
+  return {
+    ...raw,
+    businessId:   raw.business?.id   ?? raw.businessId   ?? null,
+    businessName: raw.business?.name ?? raw.businessName  ?? null,
+  };
   if (!res.ok) await handleBackendError(res, "Error al editar el cliente");
   return res.json();
 }
