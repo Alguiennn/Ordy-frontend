@@ -9,7 +9,7 @@ import type {
   UpdateBookingDto,
   Customer,
   Business,
-} from "@/lib/api";
+} from "@/lib/api.ts";
 import {
   createAppointment,
   deleteAppointment,

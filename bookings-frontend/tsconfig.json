@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+,     "app/(admin)/customers/CustomerClient.tsx.copy",     "lib/api.ts.old",     "lib/api.ts.cpy"  ],
   "exclude": ["node_modules"]
 }
