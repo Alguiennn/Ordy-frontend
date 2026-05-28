@@ -6,7 +6,6 @@ import { museoModerno } from '@/lib/fonts';
 import TypewriterGreeting from '@/components/TypewriterGreeting';
 import ExportReportButton from './ExportReportButton';
 import type { Booking, Payment, Business, Customer, BookingStatus } from "@/lib/api";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 interface DashboardClientProps {
   initialBookings: Booking[];

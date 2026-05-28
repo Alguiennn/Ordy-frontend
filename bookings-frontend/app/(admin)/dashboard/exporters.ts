@@ -13,7 +13,7 @@ import {
   TextRun,
   HeadingLevel,
 } from 'docx';
-import { Booking, Business, Customer, Payment } from '@/lib/api.ts.cpy';
+import { Booking, Business, Customer, Payment } from '@/lib/api';
 
 type ExportPage = 'bookings' | 'customers' | 'businesses' | 'payments' | 'all';
 
