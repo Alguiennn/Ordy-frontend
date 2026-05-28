@@ -15,13 +15,6 @@ interface DashboardClientProps {
   customers: Customer[];
 }
 
-interface ChartDataPoint {
-  name: string;   // Ejemplo: "Lun", "Mar", o "Ene", "Feb"
-  reservas: number;
-  ingresos: number;
-}
-
-
 // Subcomponentes de UI integrados con semántica limpia
 function Badge({ status }: { status: BookingStatus }) {
   const labels: Record<BookingStatus, string> = {
@@ -246,77 +239,6 @@ export default function DashboardClient({
           </div>
         </div>
       </section>
-    </div>
-  );
-}
-
-export function DashboardChart({ rawBookings, rawPayments }: { rawBookings: any[], rawPayments: any[] }) {
-  
-  // ── PROCESAMIENTO DE DATOS ──
-  // Aquí transformarías tus bookings/payments agrupándolos por mes o día.
-  // Ejemplo de cómo se verían los datos procesados:
-  const data: ChartDataPoint[] = [
-    { name: 'Ene', reservas: 4, ingresos: 120 },
-    { name: 'Feb', reservas: 7, ingresos: 210 },
-    { name: 'Mar', reservas: 0, ingresos: 0 }, // Un mes sin actividad
-    { name: 'Abr', reservas: 12, ingresos: 450 },
-  ];
-
-  // ── COMPROBACIÓN DE DATOS VACÍOS ──
-  // Sumamos todos los valores para saber si el gráfico está completamente en cero
-  const totalReservas = data.reduce((sum, item) => sum + item.reservas, 0);
-  const totalIngresos = data.reduce((sum, item) => sum + item.ingresos, 0);
-  const isChartEmpty = data.length === 0 || (totalReservas === 0 && totalIngresos === 0);
-
-  // Si no hay datos, mostramos un Estado Vacío elegante que no rompe la UI
-  if (isChartEmpty) {
-    return (
-      <div className="section-card" style={{ height: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📊</div>
-        <h4 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Sin estadísticas suficientes</h4>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '300px' }}>
-          Cuando empieces a recibir reservas y registrar cobros, verás aquí los gráficos de rendimiento.
-        </p>
-      </div>
-    );
-  }
-
-  // Si hay datos, renderizamos el gráfico interactivo y responsive
-  return (
-    <div className="section-card" style={{ height: '350px' }}>
-      <h3 className="panel-title" style={{ marginBottom: '1.5rem' }}>Rendimiento del Negocio</h3>
-      
-      <ResponsiveContainer width="100%" height="85%">
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <defs>
-            {/* Degradados elegantes para el fondo del gráfico */}
-            <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--primary, #2563eb)" stopOpacity={0.2}/>
-              <stop offset="95%" stopColor="var(--primary, #2563eb)" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border, #e5e7eb)" />
-          <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} tickLine={false} />
-          <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
-          
-          {/* Tooltip interactivo al pasar el cursor */}
-          <Tooltip 
-            contentStyle={{ background: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '8px' }}
-          />
-          
-          {/* Línea y área rellena */}
-          <Area 
-            name="Ingresos (€)"
-            type="monotone" 
-            dataKey="ingresos" 
-            stroke="var(--primary, #2563eb)" 
-            strokeWidth={2}
-            fillOpacity={1} 
-            fill="url(#colorIngresos)" 
-          />
-        </AreaChart>
-      </ResponsiveContainer>
     </div>
   );
 }
