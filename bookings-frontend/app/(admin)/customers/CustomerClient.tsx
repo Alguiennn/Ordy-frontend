@@ -144,9 +144,15 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
 
       {/* ── Hero ── */}
       <section className="page-hero">
-        <div><h2>Clientes</h2><p>Directorio de clientes conectado con la API.</p></div>
-        <button className="primary-btn" type="button"
-          onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}>
+        <div>
+          <h2>Clientes</h2>
+          <p>Directorio de clientes conectado con la API.</p>
+        </div>
+        <button
+          className="primary-btn"
+          type="button"
+          onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}
+        >
           Nuevo cliente
         </button>
       </section>

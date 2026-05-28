@@ -317,7 +317,7 @@ export default function ExportReportButton({
           transition: 'background 0.2s ease, color 0.2s ease',
         }}
       >
-        Exportar informe ➜]
+        Exportar informe
       </button>
 
       {/* ── Hidden JPG capture node — off-screen ── */}

@@ -178,7 +178,7 @@ export default function BusinessClient({ initialBusinesses }: { initialBusinesse
             setErrorMessage(""); setSuccessMessage(""); setCreateNameError("");
           }}
         >
-          + Nuevo negocio
+          Nuevo negocio
         </button>
       </section>
 
