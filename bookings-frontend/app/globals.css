@@ -1146,7 +1146,7 @@ select {
     cursor: pointer;
     padding: 4px;
   }
-
+}
 [data-theme="dark"] .sidebar-tooltip::before {
   border-right-color: var(--surface-2);
 }
