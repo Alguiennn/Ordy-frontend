@@ -86,7 +86,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
     setErrorMessage(""); setSuccessMessage("");
     setIsCreateOpen(false); setDeleteTargetId(null);
     setEditingId(customer.id);
-    setEditForm({ code: customer.code ?? "", name: customer.name ?? "", phone: customer.phone ?? "", email: customer.email ?? "", businessId: customer.businessId });
+    setEditForm({ code: customer.code ?? "", name: customer.name ?? "", phone: customer.phone ?? "", email: customer.email ?? "", businessId: customer.businessId ?? businesses[0]?.id ?? 1 });
   }
 
   async function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {

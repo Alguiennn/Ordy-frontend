@@ -1,7 +1,7 @@
 'use client';
 
 import ExcelJS from 'exceljs';
-import { Booking, Business, Customer } from '@/lib/api.ts.cpy';
+import { Booking, Business, Customer } from '@/lib/api';
 
 type Props = {
   bookings: Booking[];
