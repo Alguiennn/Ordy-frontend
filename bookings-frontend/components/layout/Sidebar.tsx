@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { museoModerno } from "@/lib/fonts";
 import Image from "next/image";
 
@@ -40,6 +40,7 @@ const STORAGE_KEY = "ordy_sidebar_collapsed";
 
 export default function Sidebar() {
   const pathname  = usePathname();
+  const router    = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted,   setMounted]   = useState(false);
 
@@ -56,6 +57,11 @@ export default function Sidebar() {
       localStorage.setItem(STORAGE_KEY, String(next));
       return next;
     });
+  }
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
   }
 
   // Prevent flash of wrong sidebar width on first render
@@ -79,12 +85,22 @@ export default function Sidebar() {
             pointerEvents: collapsed ? "none" : "auto",
           }}
         >
-          <h2
-            className={`${museoModerno.className} admin-sidebar__title`}
-            style={{ fontSize: "32px", lineHeight: "1.2", marginLeft: "64px" }}
-          >
-            Ordy
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", marginLeft: "35px" }}>
+            <Image
+              src="/logo.svg"
+              alt="Ordy logo"
+              width={52}
+              height={52}
+              priority
+              style={{ objectFit: "contain" }}
+            />
+            <h2
+              className={`${museoModerno.className} admin-sidebar__title`}
+              style={{ fontSize: "32px", lineHeight: "1.2", margin: 0 }}
+            >
+              Ordy
+            </h2>
+          </div>
           <p
             className={`${museoModerno.className} admin-sidebar__subtitle`}
             style={{ fontSize: "16px", lineHeight: "1.2", marginLeft: "30px" }}
@@ -140,7 +156,6 @@ export default function Sidebar() {
                   {item.label}
                 </span>
               </Link>
-
               {/* Tooltip – only rendered when collapsed */}
               {collapsed && (
                 <span className="sidebar-tooltip" role="tooltip">
@@ -151,6 +166,21 @@ export default function Sidebar() {
           );
         })}
       </nav>
+      <div className="admin-sidebar__footer">
+        <button
+          className="sidebar-logout-btn"
+          onClick={handleLogout}
+          title="Cerrar sesión"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          {!collapsed && <span>Cerrar sesión</span>}
+        </button>
+      </div>
     </aside>
   );
 }
