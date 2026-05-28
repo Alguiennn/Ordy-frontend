@@ -389,7 +389,7 @@ export default function BookingsClient({
         </div>
 
         <button className="primary-btn" type="button" onClick={openCreateForm} disabled={backendError || loading}>
-          {loading ? "⏳ Cargando..." : "✚ Nueva reserva"}
+          {loading ? "Cargando..." : "Nueva reserva"}
         </button>
       </section>
 
