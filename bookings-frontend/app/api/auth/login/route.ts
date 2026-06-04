@@ -1,24 +1,44 @@
 import { NextResponse } from "next/server";
 
-const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    ?? "admin@ordy.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "ordy1234";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
-// Cambiar mas tarde a login con bdd y contraseñas encriptadas en hash
 export async function POST(req: Request) {
-  const { email, password } = await req.json();
+  try {
+    const { email, password } = await req.json();
 
-  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const backendRes = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!backendRes.ok) {
+      const errorData = await backendRes.json().catch(() => ({}));
+      const detail = Array.isArray(errorData.message)
+        ? errorData.message.join(", ")
+        : errorData.message;
+      return NextResponse.json(
+        { error: detail || "Credenciales incorrectas" },
+        { status: backendRes.status }
+      );
+    }
+
+    const { access_token, user } = await backendRes.json();
+
+    const res = NextResponse.json({ ok: true, user });
+    res.cookies.set("ordy_auth", access_token, {
+      httpOnly: false, // Accessible by both client and server-side components
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 8, // 8 hours
+      path: "/",
+    });
+
+    return res;
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Internal Server Error" },
+      { status: 500 }
+    );
   }
-
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set("ordy_auth", "true", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 8, // 8 horas
-    path: "/",
-  });
-
-  return res;
 }

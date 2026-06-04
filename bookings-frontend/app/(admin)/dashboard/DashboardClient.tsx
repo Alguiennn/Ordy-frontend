@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { museoModerno } from '@/lib/fonts';
 import TypewriterGreeting from '@/components/TypewriterGreeting';
 import ExportReportButton from './ExportReportButton';
+import UpcomingCalendar from './UpcomingCalendar';
 import type { Booking, Payment, Business, Customer, BookingStatus } from "@/lib/api";
 
 interface DashboardClientProps {
@@ -165,45 +166,12 @@ export default function DashboardClient({
       </section>
 
       <section className="dashboard-grid">
-        {/* Tabla Principal */}
-        <div className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Próximas reservas</h3>
-            <Link href="/bookings" className="panel-subtle-link">Ver todas</Link>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Hora</th>
-                <th>Cliente</th>
-                <th>Comercio</th>
-                <th>Servicio</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {upcomingBookings.length > 0 ? (
-                upcomingBookings.map(booking => (
-                  <tr key={booking.id}>
-                    <td>{new Date(booking.date).toLocaleDateString('es-ES')}</td>
-                    <td style={{ fontWeight: 600 }}>{booking.time}</td>
-                    <td>{customerMap.get(booking.customerId) ?? `Cliente ${booking.customerId}`}</td>
-                    <td>{businessMap.get(booking.businessId) ?? `Comercio ${booking.businessId}`}</td>
-                    <td>{booking.serviceName}</td>
-                    <td><Badge status={booking.status} /></td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-                    No hay reservas próximas en la agenda.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {/* Calendario / Lista de próximas reservas */}
+        <UpcomingCalendar
+          bookings={bookings}
+          customerMap={customerMap}
+          businessMap={businessMap}
+        />
 
         {/* Info Stack Lateral (Glassmorphic) */}
         <div className="info-stack">

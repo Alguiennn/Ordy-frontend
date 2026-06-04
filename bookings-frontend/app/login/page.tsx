@@ -25,7 +25,8 @@ export default function LoginPage() {
     if (res.ok) {
       router.push("/dashboard");
     } else {
-      setError("Credenciales incorrectas.");
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Credenciales incorrectas.");
     }
     setLoading(false);
   }
