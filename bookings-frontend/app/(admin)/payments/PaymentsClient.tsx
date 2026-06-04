@@ -250,114 +250,118 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
 
       {/* FORMULARIO NUEVO COBRO */}
       {isCreateOpen && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Nuevo cobro</h3>
-            <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setErrorMessage(""); }}>Cancelar</button>
-          </div>
-          <form onSubmit={handleCreateSubmit} className="page-stack" style={{ gap: 16 }}>
-            <div className="form-grid">
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Cliente</label>
-                <select className="select" value={createForm.customerId} onChange={e => updateCreateField("customerId", e.target.value)} required>
-                  <option value="">Selecciona un cliente</option>
-                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Comercio</label>
-                <select className="select" value={createForm.businessId} onChange={e => updateCreateField("businessId", e.target.value)} required>
-                  <option value="">Selecciona un negocio</option>
-                  {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Importe (€)</label>
-                <input className="input" type="text" placeholder="Ej: 45.50" value={createForm.amount} onChange={e => updateCreateField("amount", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))} required />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Método de Pago</label>
-                <select className="select" value={createForm.method} onChange={e => updateCreateField("method", e.target.value)} required>
-                  {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Fecha</label>
-                <input className="input" type="date" value={createForm.date} onChange={e => updateCreateField("date", e.target.value)} required />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Estado</label>
-                <select className="select" value={createForm.status} onChange={e => updateCreateField("status", e.target.value as PaymentStatus)}>
-                  <option value="pending">Pendiente</option>
-                  <option value="paid">Pagado</option>
-                  <option value="cancelled">Cancelado</option>
-                </select>
-              </div>
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setIsCreateOpen(false); setErrorMessage(""); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Nuevo cobro</h3>
+              <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setErrorMessage(""); }}>Cancelar</button>
             </div>
-            {errorMessage && <div className="message-error">{errorMessage}</div>}
-            <div className="message-row">
-              <button className="primary-btn" type="submit" disabled={loadingCreate}>
-                {loadingCreate ? "Guardando..." : "Registrar cobro"}
-              </button>
-            </div>
-          </form>
-        </section>
+            <form onSubmit={handleCreateSubmit} className="page-stack" style={{ gap: 16 }}>
+              <div className="form-grid">
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Cliente</label>
+                  <select className="select" value={createForm.customerId} onChange={e => updateCreateField("customerId", e.target.value)} required>
+                    <option value="">Selecciona un cliente</option>
+                    {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Comercio</label>
+                  <select className="select" value={createForm.businessId} onChange={e => updateCreateField("businessId", e.target.value)} required>
+                    <option value="">Selecciona un negocio</option>
+                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Importe (€)</label>
+                  <input className="input" type="text" placeholder="Ej: 45.50" value={createForm.amount} onChange={e => updateCreateField("amount", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Método de Pago</label>
+                  <select className="select" value={createForm.method} onChange={e => updateCreateField("method", e.target.value)} required>
+                    {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Fecha</label>
+                  <input className="input" type="date" value={createForm.date} onChange={e => updateCreateField("date", e.target.value)} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Estado</label>
+                  <select className="select" value={createForm.status} onChange={e => updateCreateField("status", e.target.value as PaymentStatus)}>
+                    <option value="pending">Pendiente</option>
+                    <option value="paid">Pagado</option>
+                    <option value="cancelled">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+              {errorMessage && <div className="message-error">{errorMessage}</div>}
+              <div className="message-row">
+                <button className="primary-btn" type="submit" disabled={loadingCreate}>
+                  {loadingCreate ? "Guardando..." : "Registrar cobro"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* FORMULARIO EDITAR COBRO */}
       {editingId !== null && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Editar cobro #{editingId}</h3>
-            <button className="secondary-btn" onClick={() => { setEditingId(null); setErrorMessage(""); }}>Cancelar</button>
-          </div>
-          <form onSubmit={handleEditSubmit} className="page-stack" style={{ gap: 16 }}>
-            <div className="form-grid">
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Cliente</label>
-                <select className="select" value={editForm.customerId} onChange={e => updateEditField("customerId", e.target.value)} required disabled={true}>
-                  <option value="">Selecciona un cliente</option>
-                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Comercio</label>
-                <select className="select" value={editForm.businessId} onChange={e => updateEditField("businessId", e.target.value)} required disabled={true}>
-                  <option value="">Selecciona un negocio</option>
-                  {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Importe (€)</label>
-                <input className="input" type="text" placeholder="Ej: 45.50" value={editForm.amount} onChange={e => updateEditField("amount", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))} required />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Método de Pago</label>
-                <select className="select" value={editForm.method} onChange={e => updateEditField("method", e.target.value)} required>
-                  {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Fecha</label>
-                <input className="input" type="date" value={editForm.date} onChange={e => updateEditField("date", e.target.value)} required />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Estado</label>
-                <select className="select" value={editForm.status} onChange={e => updateEditField("status", e.target.value as PaymentStatus)}>
-                  <option value="pending">Pendiente</option>
-                  <option value="paid">Pagado</option>
-                  <option value="cancelled">Cancelado</option>
-                </select>
-              </div>
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setEditingId(null); setErrorMessage(""); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Editar cobro #{editingId}</h3>
+              <button className="secondary-btn" onClick={() => { setEditingId(null); setErrorMessage(""); }}>Cancelar</button>
             </div>
-            {errorMessage && <div className="message-error">{errorMessage}</div>}
-            <div className="message-row">
-              <button className="primary-btn" type="submit" disabled={loadingEdit}>
-                {loadingEdit ? "Guardando..." : "Guardar cambios"}
-              </button>
-            </div>
-          </form>
-        </section>
+            <form onSubmit={handleEditSubmit} className="page-stack" style={{ gap: 16 }}>
+              <div className="form-grid">
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Cliente</label>
+                  <select className="select" value={editForm.customerId} onChange={e => updateEditField("customerId", e.target.value)} required disabled={true}>
+                    <option value="">Selecciona un cliente</option>
+                    {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Comercio</label>
+                  <select className="select" value={editForm.businessId} onChange={e => updateEditField("businessId", e.target.value)} required disabled={true}>
+                    <option value="">Selecciona un negocio</option>
+                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Importe (€)</label>
+                  <input className="input" type="text" placeholder="Ej: 45.50" value={editForm.amount} onChange={e => updateEditField("amount", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Método de Pago</label>
+                  <select className="select" value={editForm.method} onChange={e => updateEditField("method", e.target.value)} required>
+                    {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Fecha</label>
+                  <input className="input" type="date" value={editForm.date} onChange={e => updateEditField("date", e.target.value)} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Estado</label>
+                  <select className="select" value={editForm.status} onChange={e => updateEditField("status", e.target.value as PaymentStatus)}>
+                    <option value="pending">Pendiente</option>
+                    <option value="paid">Pagado</option>
+                    <option value="cancelled">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+              {errorMessage && <div className="message-error">{errorMessage}</div>}
+              <div className="message-row">
+                <button className="primary-btn" type="submit" disabled={loadingEdit}>
+                  {loadingEdit ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* MODAL DE BORRADO */}
