@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Business } from "@/lib/api";
 import { createBusiness, deleteBusiness, updateBusiness, getDecodedToken, type DecodedToken } from "@/lib/api";
+import Pagination from "@/components/Pagination";
 
 // ── Name validation rules ──────────────────────────────────────────
 const NAME_MIN = 2;
@@ -112,6 +113,8 @@ export default function BusinessClient({ initialBusinesses }: { initialBusinesse
   const [loadingEdit, setLoadingEdit]       = useState(false);
 
   const [currentUser, setCurrentUser]       = useState<DecodedToken | null>(null);
+  const [currentPage, setCurrentPage]       = useState(1);
+  const itemsPerPage = 30;
 
   useEffect(() => {
     setCurrentUser(getDecodedToken());
@@ -120,6 +123,14 @@ export default function BusinessClient({ initialBusinesses }: { initialBusinesse
   const filtered = businesses.filter(b =>
     !search || b.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = filtered.slice(startIndex, endIndex);
 
   function handleCreateNameChange(value: string) {
     if (value.length <= NAME_MAX + 1) setCreateName(value);
@@ -383,7 +394,7 @@ export default function BusinessClient({ initialBusinesses }: { initialBusinesse
             </tr>
           </thead>
           <tbody>
-            {filtered.length > 0 ? filtered.map(b => (
+            {paginatedItems.length > 0 ? paginatedItems.map(b => (
               <tr key={b.id}>
                 <td style={{ fontWeight: 600 }}>{b.id}</td>
                 <td style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={b.name}>{b.name}</td>
@@ -414,6 +425,13 @@ export default function BusinessClient({ initialBusinesses }: { initialBusinesse
             )}
           </tbody>
         </table>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </section>
     </div>
   );

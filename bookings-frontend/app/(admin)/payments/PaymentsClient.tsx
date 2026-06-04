@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { Payment, CreatePaymentDto, UpdatePaymentDto, PaymentStatus, Customer, Business } from "@/lib/api";
 import { createPayment, updatePayment, deletePayment, getCustomers, getBusinesses, getDecodedToken, type DecodedToken } from "@/lib/api";
 import TypewriterGreeting from "@/components/TypewriterGreeting";
+import Pagination from "@/components/Pagination";
 
 const PAYMENT_METHODS = ["Tarjeta", "Bizum", "Efectivo", "Transferencia", "Suscripción"];
 
@@ -51,6 +52,8 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
   
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
 
   // Inicializar ID por defecto cuando cargan los datos
   useEffect(() => {
@@ -391,7 +394,7 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
             </tr>
           </thead>
           <tbody>
-            {payments.map(payment => (
+            {payments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(payment => (
               <tr key={payment.id}>
                 <td style={{ fontWeight: 600 }}>{payment.id}</td>
                 
@@ -440,6 +443,13 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
             ))}
           </tbody>
         </table>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={payments.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </section>
     </div>
   );

@@ -20,6 +20,7 @@ import {
   getServices,
 } from "@/lib/api";
 import { useApi, clearApiCache } from "@/lib/hooks";
+import Pagination from "@/components/Pagination";
 
 type BookingWithRelations = Booking & {
   customer?: { id: number; name: string };
@@ -64,6 +65,8 @@ export default function BookingsClient({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
 
   // Use improved API hooks with caching and retry logic
   const { data: customersData = [], loading: customersLoading, error: customersError, refetch: refetchCustomers } = 
@@ -151,6 +154,10 @@ export default function BookingsClient({
     if (statusFilter === "all") return bookings;
     return bookings.filter((booking) => booking.status === statusFilter);
   }, [bookings, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
 
   const totalCount = bookings.length;
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
@@ -771,7 +778,7 @@ export default function BookingsClient({
           </thead>
           <tbody>
             {filteredBookings.length > 0 ? (
-              filteredBookings.map(renderBookingRow)
+              filteredBookings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(renderBookingRow)
             ) : (
               <tr>
                 <td colSpan={8} style={{ textAlign: "center", padding: "24px", color: "var(--muted)", fontSize: "0.88rem" }}>
@@ -781,6 +788,13 @@ export default function BookingsClient({
             )}
           </tbody>
         </table>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredBookings.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </section>
     </div>
   );
