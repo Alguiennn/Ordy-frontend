@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Service, CreateServiceDto, UpdateServiceDto, Business } from "@/lib/api";
 import { createService, updateService, deleteService, getBusinesses } from "@/lib/api";
+import Pagination from "@/components/Pagination";
 
 const NAME_MIN = 2;
 const NAME_MAX = 100;
@@ -51,6 +52,8 @@ export default function ServicesClient({ initialServices }: { initialServices: S
 
   const [createErrors, setCreateErrors] = useState<{ name?: string; price?: string }>({});
   const [editErrors, setEditErrors] = useState<{ name?: string; price?: string }>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
 
   useEffect(() => {
     getBusinesses().then(setBusinesses).catch(() => {});
@@ -70,6 +73,14 @@ export default function ServicesClient({ initialServices }: { initialServices: S
     const matchesBusiness = businessFilter === "all" || s.businessId === businessFilter;
     return matchesSearch && matchesBusiness;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, businessFilter]);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = filtered.slice(startIndex, endIndex);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -398,7 +409,7 @@ export default function ServicesClient({ initialServices }: { initialServices: S
             </tr>
           </thead>
           <tbody>
-            {filtered.length > 0 ? filtered.map(s => (
+            {paginatedItems.length > 0 ? paginatedItems.map(s => (
               <tr key={s.id}>
                 <td style={{ fontWeight: 600 }}>{s.id}</td>
                 <td style={{ fontWeight: 500 }}>{s.name}</td>
@@ -425,6 +436,13 @@ export default function ServicesClient({ initialServices }: { initialServices: S
             )}
           </tbody>
         </table>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </section>
     </div>
   );

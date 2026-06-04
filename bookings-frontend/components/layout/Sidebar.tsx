@@ -40,16 +40,41 @@ function ExpandIcon() {
 
 const STORAGE_KEY = "ordy_sidebar_collapsed";
 
+function getIconForTheme(baseIcon: string, isDark: boolean): string {
+  if (isDark) {
+    return baseIcon.replace('.png', '-Dark.png');
+  }
+  return baseIcon;
+}
+
 export default function Sidebar() {
   const pathname  = usePathname();
   const router    = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted,   setMounted]   = useState(false);
+  const [isDark,    setIsDark]    = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "true") setCollapsed(true);
+    
+    const theme = document.documentElement.getAttribute("data-theme");
+    setIsDark(theme === "dark");
     setMounted(true);
+
+    const handleThemeChange = () => {
+      const newTheme = document.documentElement.getAttribute("data-theme");
+      setIsDark(newTheme === "dark");
+    };
+
+    window.addEventListener("storage", handleThemeChange);
+    const observer = new MutationObserver(handleThemeChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+    return () => {
+      window.removeEventListener("storage", handleThemeChange);
+      observer.disconnect();
+    };
   }, []);
 
   function toggle() {
@@ -116,7 +141,7 @@ export default function Sidebar() {
               >
                 <span className="admin-sidebar__icon-box">
                   <Image
-                    src={item.icon}
+                    src={getIconForTheme(item.icon, isDark)}
                     alt={item.label}
                     width={20}
                     height={20}

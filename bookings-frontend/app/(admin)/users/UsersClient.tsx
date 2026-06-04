@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { User, CreateUserDto, UpdateUserDto, UserRole, Business } from "@/lib/api";
 import { createUser, updateUser, deleteUser, getBusinesses } from "@/lib/api";
+import Pagination from "@/components/Pagination";
 
 const ROLES: UserRole[] = ["admin", "manager", "standard"];
 
@@ -24,6 +25,8 @@ export default function UsersClient({ initialUsers }: { initialUsers: User[] }) 
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -63,6 +66,14 @@ export default function UsersClient({ initialUsers }: { initialUsers: User[] }) 
     const matchesRole = roleFilter === "all" || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter]);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = filtered.slice(startIndex, endIndex);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -444,7 +455,7 @@ export default function UsersClient({ initialUsers }: { initialUsers: User[] }) 
             </tr>
           </thead>
           <tbody>
-            {filtered.length > 0 ? filtered.map(u => (
+            {paginatedItems.length > 0 ? paginatedItems.map(u => (
               <tr key={u.id}>
                 <td style={{ fontWeight: 600 }}>{u.id}</td>
                 <td style={{ fontWeight: 500 }}>{u.firstName} {u.lastName}</td>
@@ -471,6 +482,13 @@ export default function UsersClient({ initialUsers }: { initialUsers: User[] }) 
             )}
           </tbody>
         </table>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </section>
     </div>
   );

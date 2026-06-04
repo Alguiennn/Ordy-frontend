@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Customer, CreateCustomerDto, Business } from "@/lib/api";
 import { createCustomer, updateCustomer, deleteCustomer, getBusinesses } from "@/lib/api";
+import Pagination from "@/components/Pagination";
 
 // ── FormFields outside parent to prevent remount on every keystroke ──
 function FormFields({
@@ -69,6 +70,8 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
   const [errorMessage, setErrorMessage]     = useState("");
   const [search, setSearch]                 = useState("");
   const [businessFilter, setBusinessFilter] = useState<number | "all">("all");
+  const [currentPage, setCurrentPage]       = useState(1);
+  const itemsPerPage = 30;
 
   const filteredCustomers = customers.filter(c => {
     const matchesBusiness = businessFilter === "all" || (!!c.businessId && c.businessId === businessFilter);
@@ -79,6 +82,14 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
       (c.phone ?? "").toLowerCase().includes(q);
     return matchesBusiness && matchesSearch;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, businessFilter]);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = filteredCustomers.slice(startIndex, endIndex);
 
   function openEditForm(customer: Customer) {
     setErrorMessage(""); setSuccessMessage("");
@@ -354,7 +365,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
             </tr>
           </thead>
           <tbody>
-            {filteredCustomers.length > 0 ? filteredCustomers.map(customer => (
+            {paginatedItems.length > 0 ? paginatedItems.map(customer => (
               <tr key={customer.id}>
                 <td style={{ fontWeight: 600 }}>{customer.id}</td>
                 <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 0 }}
@@ -386,6 +397,13 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
             )}
           </tbody>
         </table>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredCustomers.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </section>
     </div>
   );
