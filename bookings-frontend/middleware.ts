@@ -3,15 +3,18 @@ import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const auth = req.cookies.get("ordy_auth")?.value;
+  const hasValidToken = auth && auth !== "true" && auth.split(".").length === 3;
   const { pathname } = req.nextUrl;
 
-  // Si no está autenticado y no está en /login → redirige a /login
-  if (!auth && pathname !== "/login") {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // Si no tiene un token válido y no está en /login → redirige a /login
+  if (!hasValidToken && pathname !== "/login") {
+    const res = NextResponse.redirect(new URL("/login", req.url));
+    res.cookies.delete("ordy_auth");
+    return res;
   }
 
-  // Si está autenticado y va a /login → redirige a /dashboard
-  if (auth && pathname === "/login") {
+  // Si tiene un token válido y va a /login → redirige a /dashboard
+  if (hasValidToken && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 

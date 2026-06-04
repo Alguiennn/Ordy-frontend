@@ -9,6 +9,7 @@ import type {
   UpdateBookingDto,
   Customer,
   Business,
+  Service,
 } from "@/lib/api.ts";
 import {
   createAppointment,
@@ -16,6 +17,7 @@ import {
   updateAppointment,
   getCustomers,
   getBusinesses,
+  getServices,
 } from "@/lib/api";
 import { useApi, clearApiCache } from "@/lib/hooks";
 
@@ -30,7 +32,7 @@ function StatusBadge({ status }: { status: BookingStatus }) {
       ? "Pendiente"
       : status === "confirmed"
         ? "Confirmada"
-        : "Pagada";
+      : "Pagada";
 
   return <span className={`badge badge--${status}`}>{label}</span>;
 }
@@ -65,23 +67,27 @@ export default function BookingsClient({
 
   // Use improved API hooks with caching and retry logic
   const { data: customersData = [], loading: customersLoading, error: customersError, refetch: refetchCustomers } = 
-    useApi<Customer[]>(() => getCustomers(), 'customers', { cacheTime: 10 * 60 * 1000 });
+    useApi<Customer[]>(() => getCustomers(), 'customers', { cacheTime: 5 * 1000 });
   
   const { data: businessesData = [], loading: businessesLoading, error: businessesError, refetch: refetchBusinesses } = 
-    useApi<Business[]>(() => getBusinesses(), 'businesses', { cacheTime: 10 * 60 * 1000 });
+    useApi<Business[]>(() => getBusinesses(), 'businesses', { cacheTime: 5 * 1000 });
 
+  const { data: servicesData = [], loading: servicesLoading, error: servicesError, refetch: refetchServices } = 
+    useApi<Service[]>(() => getServices(), 'services', { cacheTime: 5 * 1000 });
+  
   const customers = customersData || [];
   const businesses = businessesData || [];
-  const loading = customersLoading || businessesLoading;
-  const hasError = customersError || businessesError;
+  const services = servicesData || [];
+  const loading = customersLoading || businessesLoading || servicesLoading;
+  const hasError = customersError || businessesError || servicesError;
   const backendError = !!hasError;
 
   const defaultBookingForm: CreateBookingDto = {
     date: "",
     time: "",
     status: "pending",
-    customerId: customers[0]?.id ?? 0,
-    businessId: businesses[0]?.id ?? 0,
+    customerId: 0,
+    businessId: 0,
     serviceName: "",
   };
 
@@ -125,6 +131,22 @@ export default function BookingsClient({
     }
   }, [customers, businesses]);
 
+  const filteredCustomersForCreate = useMemo(() => {
+    return customers.filter(c => c.businessId === createForm.businessId);
+  }, [customers, createForm.businessId]);
+
+  const filteredServicesForCreate = useMemo(() => {
+    return services.filter(s => s.businessId === createForm.businessId && s.isActive !== false);
+  }, [services, createForm.businessId]);
+
+  const filteredCustomersForEdit = useMemo(() => {
+    return customers.filter(c => c.businessId === editForm.businessId);
+  }, [customers, editForm.businessId]);
+
+  const filteredServicesForEdit = useMemo(() => {
+    return services.filter(s => s.businessId === editForm.businessId && s.isActive !== false);
+  }, [services, editForm.businessId]);
+
   const filteredBookings = useMemo(() => {
     if (statusFilter === "all") return bookings;
     return bookings.filter((booking) => booking.status === statusFilter);
@@ -136,14 +158,17 @@ export default function BookingsClient({
   const paidCount = bookings.filter((b) => b.status === "paid").length;
 
   function renderBookingRow(booking: BookingWithRelations) {
+    const cid = booking.customerId ?? booking.customer?.id;
+    const bid = booking.businessId ?? booking.business?.id;
+
     const customerName =
-      customers.find((c) => c.id === booking.customerId)?.name ||
+      customers.find((c) => c.id === cid)?.name ||
       booking.customer?.name ||
-      (booking.customerId !== undefined ? String(booking.customerId) : "N/D");
+      (cid !== undefined && cid !== null ? String(cid) : "N/D");
     const businessName =
-      businesses.find((b) => b.id === booking.businessId)?.name ||
+      businesses.find((b) => b.id === bid)?.name ||
       booking.business?.name ||
-      (booking.businessId !== undefined ? String(booking.businessId) : "N/D");
+      (bid !== undefined && bid !== null ? String(bid) : "N/D");
 
     return (
       <tr key={booking.id}>
@@ -275,12 +300,20 @@ export default function BookingsClient({
 
     try {
       const created = await createAppointment(createForm);
+      const cid = created.customerId ?? (created as any).customer?.id;
+      const bid = created.businessId ?? (created as any).business?.id;
       const createdWithRelations: BookingWithRelations = {
         ...created,
-        customer: customers.find((c) => c.id === created.customerId) ?? undefined,
-        business: businesses.find((b) => b.id === created.businessId) ?? undefined,
+        customerId: cid,
+        businessId: bid,
+        customer: customers.find((c) => c.id === cid) ?? undefined,
+        business: businesses.find((b) => b.id === bid) ?? undefined,
       };
       setBookings((prev) => [createdWithRelations, ...prev]);
+      // Refresh related data to avoid stale lists
+      void refetchCustomers();
+      void refetchBusinesses();
+      void refetchServices();
       resetCreateForm();
       setIsCreateOpen(false);
       setSuccessMessage("✅ Reserva creada correctamente.");
@@ -324,10 +357,14 @@ export default function BookingsClient({
       };
 
       const updated = await updateAppointment(editingBookingId, payload);
+      const cid = updated.customerId ?? (updated as any).customer?.id;
+      const bid = updated.businessId ?? (updated as any).business?.id;
       const updatedWithRelations: BookingWithRelations = {
         ...updated,
-        customer: customers.find((c) => c.id === updated.customerId) ?? undefined,
-        business: businesses.find((b) => b.id === updated.businessId) ?? undefined,
+        customerId: cid,
+        businessId: bid,
+        customer: customers.find((c) => c.id === cid) ?? undefined,
+        business: businesses.find((b) => b.id === bid) ?? undefined,
       };
 
       setBookings((prev) =>
@@ -335,6 +372,10 @@ export default function BookingsClient({
           booking.id === editingBookingId ? updatedWithRelations : booking
         )
       );
+      // Refresh related data after edit
+      void refetchCustomers();
+      void refetchBusinesses();
+      void refetchServices();
 
       setEditingBookingId(null);
       resetEditForm();
@@ -367,6 +408,10 @@ export default function BookingsClient({
       if (editingBookingId === deleteTargetId) {
         closeEditForm();
       }
+      // Refresh related data after deletion
+      void refetchCustomers();
+      void refetchBusinesses();
+      void refetchServices();
 
       setSuccessMessage("✅ Reserva eliminada correctamente.");
       setTimeout(() => setSuccessMessage(""), 4000);
@@ -462,25 +507,15 @@ export default function BookingsClient({
               </select>
               <select
                 className="select"
-                value={createForm.customerId}
-                onChange={(e) =>
-                  updateCreateForm("customerId", Number(e.target.value))
-                }
-                required
-              >
-                <option value="">Selecciona cliente</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="select"
                 value={createForm.businessId}
-                onChange={(e) =>
-                  updateCreateForm("businessId", Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const newBusinessId = Number(e.target.value);
+                  updateCreateForm("businessId", newBusinessId);
+                  const matchingCustomers = customers.filter(c => c.businessId === newBusinessId);
+                  updateCreateForm("customerId", matchingCustomers[0]?.id ?? 0);
+                  const matchingServices = services.filter(s => s.businessId === newBusinessId);
+                  updateCreateForm("serviceName", matchingServices[0]?.name ?? "");
+                }}
                 required
               >
                 <option value="">Selecciona negocio</option>
@@ -490,14 +525,34 @@ export default function BookingsClient({
                   </option>
                 ))}
               </select>
-              <input
-                className="input input--full"
-                type="text"
+              <select
+                className="select"
+                value={createForm.customerId}
+                onChange={(e) =>
+                  updateCreateForm("customerId", Number(e.target.value))
+                }
+                required
+              >
+                <option value="">Selecciona cliente</option>
+                {filteredCustomersForCreate.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="select select--full"
                 value={createForm.serviceName}
                 onChange={(e) => updateCreateForm("serviceName", e.target.value)}
-                placeholder="Servicio"
                 required
-              />
+              >
+                <option value="">Selecciona servicio</option>
+                {filteredServicesForCreate.map((service) => (
+                  <option key={service.id} value={service.name}>
+                    {service.name} (ID: {service.id})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {errorMessage ? <div className="message-error">{errorMessage}</div> : null}
@@ -551,25 +606,15 @@ export default function BookingsClient({
               </select>
               <select
                 className="select"
-                value={editForm.customerId}
-                onChange={(e) =>
-                  updateEditForm("customerId", Number(e.target.value))
-                }
-                required
-              >
-                <option value="">Selecciona cliente</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="select"
                 value={editForm.businessId}
-                onChange={(e) =>
-                  updateEditForm("businessId", Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const newBusinessId = Number(e.target.value);
+                  updateEditForm("businessId", newBusinessId);
+                  const matchingCustomers = customers.filter(c => c.businessId === newBusinessId);
+                  updateEditForm("customerId", matchingCustomers[0]?.id ?? 0);
+                  const matchingServices = services.filter(s => s.businessId === newBusinessId);
+                  updateEditForm("serviceName", matchingServices[0]?.name ?? "");
+                }}
                 required
               >
                 <option value="">Selecciona negocio</option>
@@ -579,14 +624,34 @@ export default function BookingsClient({
                   </option>
                 ))}
               </select>
-              <input
-                className="input input--full"
-                type="text"
+              <select
+                className="select"
+                value={editForm.customerId}
+                onChange={(e) =>
+                  updateEditForm("customerId", Number(e.target.value))
+                }
+                required
+              >
+                <option value="">Selecciona cliente</option>
+                {filteredCustomersForEdit.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="select select--full"
                 value={editForm.serviceName}
                 onChange={(e) => updateEditForm("serviceName", e.target.value)}
-                placeholder="Servicio"
                 required
-              />
+              >
+                <option value="">Selecciona servicio</option>
+                {filteredServicesForEdit.map((service) => (
+                  <option key={service.id} value={service.name}>
+                    {service.name} (ID: {service.id})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {errorMessage ? <div className="message-error">{errorMessage}</div> : null}
@@ -659,7 +724,7 @@ export default function BookingsClient({
               <strong>Modo offline:</strong> Los cambios no se guardarán. 
               <button 
                 type="button" 
-                onClick={async () => { await Promise.all([refetchCustomers(), refetchBusinesses()]); }} 
+                onClick={async () => { await Promise.all([refetchCustomers(), refetchBusinesses(), refetchServices()]); }} 
                 style={{ marginLeft: 8, background: "transparent", color: "#7F1D1D", textDecoration: "underline", cursor: "pointer", border: "none", padding: 0 }}
               >
                 Reconectar
@@ -681,6 +746,11 @@ export default function BookingsClient({
         {businessesError && (
           <div style={{ marginBottom: 12, padding: "12px 14px", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", color: "#7F1D1D" }}>
             ❌ Error al cargar negocios: {businessesError.message}
+          </div>
+        )}
+        {servicesError && (
+          <div style={{ marginBottom: 12, padding: "12px 14px", background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: "var(--radius-sm)", fontSize: "0.82rem", color: "#7F1D1D" }}>
+            ❌ Error al cargar servicios: {servicesError.message}
           </div>
         )}
         {successMessage ? <div className="message-success" style={{ marginBottom: 12 }}>{successMessage}</div> : null}

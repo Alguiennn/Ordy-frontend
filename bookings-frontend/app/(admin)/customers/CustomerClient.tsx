@@ -16,7 +16,6 @@ function FormFields({
 }) {
   return (
     <div className="form-grid">
-      <input className="input" placeholder="Código (C-001)" value={form.code ?? ""} onChange={e => update("code", e.target.value)} required />
       <input className="input" placeholder="Nombre" value={form.name ?? ""} onChange={e => update("name", e.target.value)} required />
       <input className="input" placeholder="Teléfono" value={form.phone ?? ""} onChange={e => update("phone", e.target.value)} />
       <input className="input" type="email" placeholder="Email" value={form.email ?? ""} onChange={e => update("email", e.target.value)} required />
@@ -56,7 +55,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
     [businesses]
   );
 
-  const emptyForm: CreateCustomerDto = { code: "", name: "", phone: "", email: "", businessId: businesses[0]?.id ?? 1 };
+  const emptyForm: CreateCustomerDto = { name: "", phone: "", email: "", businessId: businesses[0]?.id ?? 1 };
 
   const [createForm, setCreateForm]         = useState<CreateCustomerDto>(emptyForm);
   const [editForm, setEditForm]             = useState<CreateCustomerDto>(emptyForm);
@@ -77,7 +76,6 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
     const matchesSearch = !q ||
       (c.name  ?? "").toLowerCase().includes(q) ||
       (c.email ?? "").toLowerCase().includes(q) ||
-      (c.code  ?? "").toLowerCase().includes(q) ||
       (c.phone ?? "").toLowerCase().includes(q);
     return matchesBusiness && matchesSearch;
   });
@@ -86,7 +84,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
     setErrorMessage(""); setSuccessMessage("");
     setIsCreateOpen(false); setDeleteTargetId(null);
     setEditingId(customer.id);
-    setEditForm({ code: customer.code ?? "", name: customer.name ?? "", phone: customer.phone ?? "", email: customer.email ?? "", businessId: customer.businessId ?? businesses[0]?.id ?? 1 });
+    setEditForm({ name: customer.name ?? "", phone: customer.phone ?? "", email: customer.email ?? "", businessId: customer.businessId ?? businesses[0]?.id ?? 1 });
   }
 
   async function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -348,11 +346,10 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
           <thead>
             <tr>
               <th style={{ width: 48 }}>ID</th>
-              <th style={{ width: 90 }}>Código</th>
-              <th style={{ width: "18%" }}>Nombre</th>
+              <th style={{ width: "22%" }}>Nombre</th>
               <th style={{ width: 120 }}>Teléfono</th>
-              <th style={{ width: "22%" }}>Email</th>
-              <th style={{ width: "18%" }}>Negocio</th>
+              <th style={{ width: "26%" }}>Email</th>
+              <th style={{ width: "20%" }}>Negocio</th>
               <th style={{ width: 140 }}>Acciones</th>
             </tr>
           </thead>
@@ -360,9 +357,6 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
             {filteredCustomers.length > 0 ? filteredCustomers.map(customer => (
               <tr key={customer.id}>
                 <td style={{ fontWeight: 600 }}>{customer.id}</td>
-                {/* All text cells truncate with ellipsis instead of pushing columns */}
-                <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 0 }}
-                    title={customer.code ?? ""}>{customer.code}</td>
                 <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 0 }}
                     title={customer.name ?? ""}>{customer.name}</td>
                 <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 0 }}
@@ -385,7 +379,7 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
               </tr>
             )) : (
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", padding: "24px", color: "var(--muted)", fontSize: "0.88rem" }}>
+                <td colSpan={6} style={{ textAlign: "center", padding: "24px", color: "var(--muted)", fontSize: "0.88rem" }}>
                   📭 No hay clientes que coincidan con los filtros
                 </td>
               </tr>

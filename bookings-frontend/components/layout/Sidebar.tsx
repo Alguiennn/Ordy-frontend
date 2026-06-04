@@ -11,7 +11,9 @@ const menuItems = [
   { label: "Reservas",      href: "/bookings",   icon: "/icons/reserva1.png"     },
   { label: "Clientes",      href: "/customers",  icon: "/icons/cliente.png"      },
   { label: "Negocios",      href: "/businesses", icon: "/icons/business.png"     },
+  { label: "Servicios",     href: "/services",   icon: "/icons/business.png"     },
   { label: "Pagos",         href: "/payments",   icon: "/icons/pagos.png"        },
+  { label: "Usuarios",      href: "/users",      icon: "/icons/cliente.png"      },
 ];
 
 function CollapseIcon() {

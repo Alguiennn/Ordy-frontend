@@ -1,27 +1,39 @@
 'use client';
 
-import { useState } from "react";
-import type { Payment, CreatePaymentDto, UpdatePaymentDto, PaymentStatus } from "@/lib/api";
-import { createPayment, updatePayment, deletePayment } from "@/lib/api";
+import { useState, useEffect } from "react";
+import type { Payment, CreatePaymentDto, UpdatePaymentDto, PaymentStatus, Customer, Business } from "@/lib/api";
+import { createPayment, updatePayment, deletePayment, getCustomers, getBusinesses, getDecodedToken, type DecodedToken } from "@/lib/api";
 import TypewriterGreeting from "@/components/TypewriterGreeting";
 
 const PAYMENT_METHODS = ["Tarjeta", "Bizum", "Efectivo", "Transferencia", "Suscripción"];
 
 function PaymentBadge({ status }: { status: PaymentStatus }) {
+  const label = status === "paid" ? "Pagado" : status === "cancelled" ? "Cancelado" : "Por cobrar";
+  const badgeClass = status === "paid" ? "confirmed" : status === "cancelled" ? "pending" : "pending";
   return (
-    <span className={`badge badge--${status === "paid" ? "confirmed" : "pending"}`}>
-      {status === "paid" ? "Pagado" : "Por cobrar"}
+    <span className={`badge badge--${badgeClass}`} style={status === "cancelled" ? { background: "var(--danger, #ef4444)", color: "#fff" } : undefined}>
+      {label}
     </span>
   );
 }
 
 export default function PaymentsClient({ initialPayments }: { initialPayments: Payment[] }) {
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [currentUser, setCurrentUser] = useState<DecodedToken | null>(null);
+
+  // Cargar clientes y negocios para los selectores
+  useEffect(() => {
+    getCustomers().then(setCustomers).catch(() => {});
+    getBusinesses().then(setBusinesses).catch(() => {});
+    setCurrentUser(getDecodedToken());
+  }, []);
 
   const emptyForm = {
     code: "", 
-    customerId: "1", 
-    businessId: "1", 
+    customerId: "", 
+    businessId: "", 
     amount: "", 
     method: PAYMENT_METHODS[0], 
     date: new Date().toISOString().split('T')[0], 
@@ -33,12 +45,23 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId]         = useState<number | null>(null);
   const [loadingCreate, setLoadingCreate] = useState(false);
-  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [loadingEdit, setLoadingEdit]       = useState(false);
   
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Inicializar ID por defecto cuando cargan los datos
+  useEffect(() => {
+    if (customers.length > 0 && businesses.length > 0) {
+      setCreateForm(prev => ({
+        ...prev,
+        customerId: prev.customerId || String(customers[0].id),
+        businessId: prev.businessId || String(businesses[0].id)
+      }));
+    }
+  }, [customers, businesses]);
 
   // 📊 CÁLCULOS DINÁMICOS
   const paidPayments = payments.filter(p => p.status === "paid");
@@ -71,8 +94,8 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
 
     setEditForm({ 
       code: payment.code || "", 
-      customerId: String(cId) || "1", 
-      businessId: String(bId) || "1", 
+      customerId: String(cId) || (customers[0]?.id ? String(customers[0].id) : "1"), 
+      businessId: String(bId) || (businesses[0]?.id ? String(businesses[0].id) : "1"), 
       amount: String(payment.amount) || "", 
       method: payment.method || PAYMENT_METHODS[0], 
       date: payment.date || "", 
@@ -83,8 +106,8 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
   function prepareDto(formValues: typeof emptyForm): CreatePaymentDto {
     return {
       code: formValues.code || `COB-${Date.now().toString().slice(-6)}`,
-      customerId: Number(formValues.customerId) || 1,
-      businessId: Number(formValues.businessId) || 1,
+      customerId: Number(formValues.customerId) || customers[0]?.id || 1,
+      businessId: Number(formValues.businessId) || businesses[0]?.id || 1,
       amount: parseFloat(formValues.amount) || 0,
       method: formValues.method,
       date: formValues.date,
@@ -98,13 +121,24 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
     try {
       const dto = prepareDto(createForm);
       const created = await createPayment(dto);
-      setPayments(prev => [created, ...prev]);
-      setCreateForm(emptyForm); setIsCreateOpen(false);
+      const cId = created.customerId ?? (created as any).customer?.id;
+      const bId = created.businessId ?? (created as any).business?.id;
+      const createdWithRelations = {
+        ...created,
+        customerId: cId,
+        businessId: bId,
+      };
+      setPayments(prev => [createdWithRelations, ...prev]);
+      setCreateForm(prev => ({
+        ...emptyForm,
+        customerId: String(customers[0]?.id || ""),
+        businessId: String(businesses[0]?.id || "")
+      }));
+      setIsCreateOpen(false);
       setSuccessMessage("Pago registrado correctamente.");
     } catch (err: any) { 
-      console.error("Error capturado al crear:", err);
-      const backendMessage = err.response?.data?.message || err.message || "Error desconocido en el servidor";
-      setErrorMessage(`No se pudo registrar: ${Array.isArray(backendMessage) ? backendMessage.join(", ") : backendMessage}`);
+      console.error("Error al crear pago:", err);
+      setErrorMessage(err.message || "No se pudo registrar el pago.");
     } finally { setLoadingCreate(false); }
   }
 
@@ -115,13 +149,19 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
     try {
       const dto = prepareDto(editForm);
       const updated = await updatePayment(editingId, dto as UpdatePaymentDto);
-      setPayments(prev => prev.map(p => p.id === editingId ? updated : p));
+      const cId = updated.customerId ?? (updated as any).customer?.id;
+      const bId = updated.businessId ?? (updated as any).business?.id;
+      const updatedWithRelations = {
+        ...updated,
+        customerId: cId,
+        businessId: bId,
+      };
+      setPayments(prev => prev.map(p => p.id === editingId ? updatedWithRelations : p));
       setEditingId(null); setEditForm(emptyForm);
       setSuccessMessage("Pago actualizado correctamente.");
     } catch (err: any) { 
-      console.error("Error capturado al editar:", err);
-      const backendMessage = err.response?.data?.message || err.message || "Error desconocido en el servidor";
-      setErrorMessage(`No se pudo actualizar: ${Array.isArray(backendMessage) ? backendMessage.join(", ") : backendMessage}`);
+      console.error("Error al editar pago:", err);
+      setErrorMessage(err.message || "No se pudo actualizar el pago.");
     } finally { setLoadingEdit(false); }
   }
 
@@ -134,9 +174,8 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
       setSuccessMessage("Pago eliminado correctamente.");
       setDeleteTargetId(null);
     } catch (err: any) {
-      console.error("Error capturado al eliminar:", err);
-      const backendMessage = err.response?.data?.message || err.message || "No se pudo eliminar";
-      setErrorMessage(`Error al eliminar: ${backendMessage}`);
+      console.error("Error al eliminar pago:", err);
+      setErrorMessage(err.message || "No se pudo eliminar el pago.");
     } finally { 
       setDeletingId(null); 
     }
@@ -162,7 +201,17 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
           />
           <p>Registro y gestión de cobros con validación en tiempo real.</p>
         </div>
-        <button className="primary-btn" type="button" onClick={() => { setIsCreateOpen(true); setEditingId(null); setErrorMessage(""); setSuccessMessage(""); }}>
+        <button className="primary-btn" type="button" onClick={() => {
+          setIsCreateOpen(true);
+          setEditingId(null);
+          setErrorMessage("");
+          setSuccessMessage("");
+          setCreateForm(prev => ({
+            ...prev,
+            customerId: prev.customerId || String(customers[0]?.id || ""),
+            businessId: prev.businessId || String(businesses[0]?.id || "")
+          }));
+        }}>
           Registrar pago
         </button>
       </section>
@@ -201,17 +250,23 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
         <section className="section-card">
           <div className="panel-title-row">
             <h3 className="panel-title">Nuevo cobro</h3>
-            <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateForm(emptyForm); setErrorMessage(""); }}>Cancelar</button>
+            <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setErrorMessage(""); }}>Cancelar</button>
           </div>
           <form onSubmit={handleCreateSubmit} className="page-stack" style={{ gap: 16 }}>
             <div className="form-grid">
               <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>ID Cliente</label>
-                <input className="input" type="text" value={createForm.customerId} onChange={e => updateCreateField("customerId", e.target.value.replace(/\D/g, ""))} required />
+                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Cliente</label>
+                <select className="select" value={createForm.customerId} onChange={e => updateCreateField("customerId", e.target.value)} required>
+                  <option value="">Selecciona un cliente</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
+                </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>ID Comercio</label>
-                <input className="input" type="text" value={createForm.businessId} onChange={e => updateCreateField("businessId", e.target.value.replace(/\D/g, ""))} required />
+                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Comercio</label>
+                <select className="select" value={createForm.businessId} onChange={e => updateCreateField("businessId", e.target.value)} required>
+                  <option value="">Selecciona un negocio</option>
+                  {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
               </div>
               <div>
                 <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Importe (€)</label>
@@ -232,6 +287,7 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
                 <select className="select" value={createForm.status} onChange={e => updateCreateField("status", e.target.value as PaymentStatus)}>
                   <option value="pending">Pendiente</option>
                   <option value="paid">Pagado</option>
+                  <option value="cancelled">Cancelado</option>
                 </select>
               </div>
             </div>
@@ -250,17 +306,23 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
         <section className="section-card">
           <div className="panel-title-row">
             <h3 className="panel-title">Editar cobro #{editingId}</h3>
-            <button className="secondary-btn" onClick={() => { setEditingId(null); setEditForm(emptyForm); setErrorMessage(""); }}>Cancelar</button>
+            <button className="secondary-btn" onClick={() => { setEditingId(null); setErrorMessage(""); }}>Cancelar</button>
           </div>
           <form onSubmit={handleEditSubmit} className="page-stack" style={{ gap: 16 }}>
             <div className="form-grid">
               <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>ID Cliente</label>
-                <input className="input" type="text" value={editForm.customerId} onChange={e => updateEditField("customerId", e.target.value.replace(/\D/g, ""))} required />
+                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Cliente</label>
+                <select className="select" value={editForm.customerId} onChange={e => updateEditField("customerId", e.target.value)} required disabled={true}>
+                  <option value="">Selecciona un cliente</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
+                </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>ID Comercio</label>
-                <input className="input" type="text" value={editForm.businessId} onChange={e => updateEditField("businessId", e.target.value.replace(/\D/g, ""))} required />
+                <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Comercio</label>
+                <select className="select" value={editForm.businessId} onChange={e => updateEditField("businessId", e.target.value)} required disabled={true}>
+                  <option value="">Selecciona un negocio</option>
+                  {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
               </div>
               <div>
                 <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Importe (€)</label>
@@ -281,6 +343,7 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
                 <select className="select" value={editForm.status} onChange={e => updateEditField("status", e.target.value as PaymentStatus)}>
                   <option value="pending">Pendiente</option>
                   <option value="paid">Pagado</option>
+                  <option value="cancelled">Cancelado</option>
                 </select>
               </div>
             </div>
@@ -319,6 +382,7 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
         </div>
 
         {successMessage && <div className="message-success" style={{ marginBottom: 12 }}>{successMessage}</div>}
+        {errorMessage && <div className="message-error" style={{ marginBottom: 12 }}>{errorMessage}</div>}
 
         <table className="data-table">
           <thead>
@@ -334,24 +398,28 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
                 {/* Cliente */}
                 <td>
                   {(() => {
-                    if (!payment.customerId) return "Sin Cliente";
+                    const cId = payment.customerId ?? (payment as any).customer?.id;
+                    const matchedCustomer = customers.find(c => c.id === Number(cId));
+                    if (matchedCustomer) return matchedCustomer.name;
                     if (typeof payment.customerId === 'object') {
                       return (payment.customerId as any).name || `ID: ${(payment.customerId as any).id}`;
                     }
                     if ((payment as any).customer?.name) return (payment as any).customer.name;
-                    return `ID: ${payment.customerId}`;
+                    return `ID: ${cId ?? "N/D"}`;
                   })()}
                 </td>
 
                 {/* Comercio */}
                 <td>
                   {(() => {
-                    if (!payment.businessId) return "Sin Comercio";
+                    const bId = payment.businessId ?? (payment as any).business?.id;
+                    const matchedBiz = businesses.find(b => b.id === Number(bId));
+                    if (matchedBiz) return matchedBiz.name;
                     if (typeof payment.businessId === 'object') {
                       return (payment.businessId as any).name || `ID: ${(payment.businessId as any).id}`;
                     }
                     if ((payment as any).business?.name) return (payment as any).business.name;
-                    return `ID: ${payment.businessId}`;
+                    return `ID: ${bId ?? "N/D"}`;
                   })()}
                 </td>
                 
@@ -363,7 +431,9 @@ export default function PaymentsClient({ initialPayments }: { initialPayments: P
                 <td>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button className="secondary-btn" onClick={() => openEditForm(payment)}>Editar</button>
-                    <button className="secondary-btn" onClick={() => setDeleteTargetId(payment.id)}>Eliminar</button>
+                    {currentUser?.role !== "standard" && (
+                      <button className="secondary-btn" onClick={() => setDeleteTargetId(payment.id)}>Eliminar</button>
+                    )}
                   </div>
                 </td>
               </tr>
