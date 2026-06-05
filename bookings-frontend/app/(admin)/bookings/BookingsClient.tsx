@@ -97,26 +97,7 @@ export default function BookingsClient({
   const [createForm, setCreateForm] = useState<CreateBookingDto>(defaultBookingForm);
   const [editForm, setEditForm] = useState<CreateBookingDto>(defaultBookingForm);
 
-  const modalBackdropStyle = {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(15, 23, 42, 0.65)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1100,
-    padding: 24,
-  } as const;
 
-  const modalCardStyle = {
-    background: "#fff",
-    borderRadius: 18,
-    padding: 24,
-    width: "min(760px, 100%)",
-    maxHeight: "calc(100vh - 64px)",
-    overflowY: "auto",
-    boxShadow: "0 28px 68px rgba(15, 23, 42, 0.18)",
-  } as const;
 
   // Update forms when data loads
   useEffect(() => {
@@ -476,8 +457,8 @@ export default function BookingsClient({
       </section>
 
       {isCreateOpen && (
-        <div style={modalBackdropStyle} onClick={(e) => { if (e.target === e.currentTarget) closeCreateForm(); }}>
-          <section className="section-card" style={modalCardStyle}>
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) closeCreateForm(); }}>
+          <section className="form-modal-card">
             <div className="panel-title-row">
               <h3 className="panel-title">Nueva reserva</h3>
               <button type="button" className="secondary-btn" onClick={closeCreateForm}>
@@ -575,8 +556,8 @@ export default function BookingsClient({
       )}
 
       {editingBookingId !== null && (
-        <div style={modalBackdropStyle} onClick={(e) => { if (e.target === e.currentTarget) closeEditForm(); }}>
-          <section className="section-card" style={modalCardStyle}>
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) closeEditForm(); }}>
+          <section className="form-modal-card">
             <div className="panel-title-row">
               <h3 className="panel-title">Editar reserva #{editingBookingId}</h3>
               <button type="button" className="secondary-btn" onClick={closeEditForm}>

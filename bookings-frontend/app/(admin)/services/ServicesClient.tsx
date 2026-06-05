@@ -215,138 +215,142 @@ export default function ServicesClient({ initialServices }: { initialServices: S
 
       {/* ── Create Form ── */}
       {isCreateOpen && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Nuevo servicio</h3>
-            <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateErrors({}); }}>
-              Cancelar
-            </button>
-          </div>
-          <form onSubmit={handleCreate} className="page-stack" style={{ gap: 16 }}>
-            <div className="form-grid">
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nombre del Servicio</label>
-                <input
-                  className="input"
-                  placeholder="Ej: Corte de pelo caballero"
-                  value={createForm.name}
-                  onChange={e => {
-                    updateCreateField("name", e.target.value);
-                    if (createErrors.name) setCreateErrors(prev => ({ ...prev, name: undefined }));
-                  }}
-                  required
-                  style={{ borderColor: createErrors.name ? "var(--danger, #ef4444)" : undefined }}
-                />
-                {createErrors.name && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{createErrors.name}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Precio (€)</label>
-                <input
-                  className="input"
-                  placeholder="Ej: 15.00"
-                  value={createForm.price}
-                  onChange={e => {
-                    updateCreateField("price", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."));
-                    if (createErrors.price) setCreateErrors(prev => ({ ...prev, price: undefined }));
-                  }}
-                  required
-                  style={{ borderColor: createErrors.price ? "var(--danger, #ef4444)" : undefined }}
-                />
-                {createErrors.price && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{createErrors.price}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Negocio</label>
-                <select className="select" value={createForm.businessId} onChange={e => updateCreateField("businessId", e.target.value)} required>
-                  <option value="">Selecciona un negocio</option>
-                  {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%", paddingTop: 20 }}>
-                <input
-                  type="checkbox"
-                  id="create-isActive"
-                  checked={createForm.isActive}
-                  onChange={e => updateCreateField("isActive", e.target.checked)}
-                />
-                <label htmlFor="create-isActive" style={{ fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Activo</label>
-              </div>
-            </div>
-            {errorMessage && <p className="message-error">{errorMessage}</p>}
-            <div>
-              <button className="primary-btn" type="submit" disabled={loadingCreate}>
-                {loadingCreate ? "Creando..." : "Crear servicio"}
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setIsCreateOpen(false); setCreateErrors({}); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Nuevo servicio</h3>
+              <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateErrors({}); }}>
+                Cancelar
               </button>
             </div>
-          </form>
-        </section>
+            <form onSubmit={handleCreate} className="page-stack" style={{ gap: 16 }}>
+              <div className="form-grid">
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nombre del Servicio</label>
+                  <input
+                    className="input"
+                    placeholder="Ej: Corte de pelo caballero"
+                    value={createForm.name}
+                    onChange={e => {
+                      updateCreateField("name", e.target.value);
+                      if (createErrors.name) setCreateErrors(prev => ({ ...prev, name: undefined }));
+                    }}
+                    required
+                    style={{ borderColor: createErrors.name ? "var(--danger, #ef4444)" : undefined }}
+                  />
+                  {createErrors.name && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{createErrors.name}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Precio (€)</label>
+                  <input
+                    className="input"
+                    placeholder="Ej: 15.00"
+                    value={createForm.price}
+                    onChange={e => {
+                      updateCreateField("price", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."));
+                      if (createErrors.price) setCreateErrors(prev => ({ ...prev, price: undefined }));
+                    }}
+                    required
+                    style={{ borderColor: createErrors.price ? "var(--danger, #ef4444)" : undefined }}
+                  />
+                  {createErrors.price && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{createErrors.price}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Negocio</label>
+                  <select className="select" value={createForm.businessId} onChange={e => updateCreateField("businessId", e.target.value)} required>
+                    <option value="">Selecciona un negocio</option>
+                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%", paddingTop: 20 }}>
+                  <input
+                    type="checkbox"
+                    id="create-isActive"
+                    checked={createForm.isActive}
+                    onChange={e => updateCreateField("isActive", e.target.checked)}
+                  />
+                  <label htmlFor="create-isActive" style={{ fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Activo</label>
+                </div>
+              </div>
+              {errorMessage && <p className="message-error">{errorMessage}</p>}
+              <div>
+                <button className="primary-btn" type="submit" disabled={loadingCreate}>
+                  {loadingCreate ? "Creando..." : "Crear servicio"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* ── Edit Form ── */}
       {editingId !== null && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Editar servicio #{editingId}</h3>
-            <button className="secondary-btn" onClick={() => { setEditingId(null); setEditErrors({}); }}>
-              Cancelar
-            </button>
-          </div>
-          <form onSubmit={handleEdit} className="page-stack" style={{ gap: 16 }}>
-            <div className="form-grid">
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nombre del Servicio</label>
-                <input
-                  className="input"
-                  placeholder="Nombre del servicio"
-                  value={editForm.name}
-                  onChange={e => {
-                    updateEditField("name", e.target.value);
-                    if (editErrors.name) setEditErrors(prev => ({ ...prev, name: undefined }));
-                  }}
-                  required
-                  style={{ borderColor: editErrors.name ? "var(--danger, #ef4444)" : undefined }}
-                />
-                {editErrors.name && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{editErrors.name}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Precio (€)</label>
-                <input
-                  className="input"
-                  placeholder="Precio"
-                  value={editForm.price}
-                  onChange={e => {
-                    updateEditField("price", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."));
-                    if (editErrors.price) setEditErrors(prev => ({ ...prev, price: undefined }));
-                  }}
-                  required
-                  style={{ borderColor: editErrors.price ? "var(--danger, #ef4444)" : undefined }}
-                />
-                {editErrors.price && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{editErrors.price}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Negocio</label>
-                <select className="select" value={editForm.businessId} onChange={e => updateEditField("businessId", e.target.value)} required>
-                  <option value="">Selecciona un negocio</option>
-                  {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%", paddingTop: 20 }}>
-                <input
-                  type="checkbox"
-                  id="edit-isActive"
-                  checked={editForm.isActive}
-                  onChange={e => updateEditField("isActive", e.target.checked)}
-                />
-                <label htmlFor="edit-isActive" style={{ fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Activo</label>
-              </div>
-            </div>
-            {errorMessage && <p className="message-error">{errorMessage}</p>}
-            <div>
-              <button className="primary-btn" type="submit" disabled={loadingEdit}>
-                {loadingEdit ? "Guardando..." : "Guardar cambios"}
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setEditingId(null); setEditErrors({}); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Editar servicio #{editingId}</h3>
+              <button className="secondary-btn" onClick={() => { setEditingId(null); setEditErrors({}); }}>
+                Cancelar
               </button>
             </div>
-          </form>
-        </section>
+            <form onSubmit={handleEdit} className="page-stack" style={{ gap: 16 }}>
+              <div className="form-grid">
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nombre del Servicio</label>
+                  <input
+                    className="input"
+                    placeholder="Nombre del servicio"
+                    value={editForm.name}
+                    onChange={e => {
+                      updateEditField("name", e.target.value);
+                      if (editErrors.name) setEditErrors(prev => ({ ...prev, name: undefined }));
+                    }}
+                    required
+                    style={{ borderColor: editErrors.name ? "var(--danger, #ef4444)" : undefined }}
+                  />
+                  {editErrors.name && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{editErrors.name}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Precio (€)</label>
+                  <input
+                    className="input"
+                    placeholder="Precio"
+                    value={editForm.price}
+                    onChange={e => {
+                      updateEditField("price", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."));
+                      if (editErrors.price) setEditErrors(prev => ({ ...prev, price: undefined }));
+                    }}
+                    required
+                    style={{ borderColor: editErrors.price ? "var(--danger, #ef4444)" : undefined }}
+                  />
+                  {editErrors.price && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{editErrors.price}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Negocio</label>
+                  <select className="select" value={editForm.businessId} onChange={e => updateEditField("businessId", e.target.value)} required>
+                    <option value="">Selecciona un negocio</option>
+                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%", paddingTop: 20 }}>
+                  <input
+                    type="checkbox"
+                    id="edit-isActive"
+                    checked={editForm.isActive}
+                    onChange={e => updateEditField("isActive", e.target.checked)}
+                  />
+                  <label htmlFor="edit-isActive" style={{ fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Activo</label>
+                </div>
+              </div>
+              {errorMessage && <p className="message-error">{errorMessage}</p>}
+              <div>
+                <button className="primary-btn" type="submit" disabled={loadingEdit}>
+                  {loadingEdit ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* ── Delete Modal ── */}

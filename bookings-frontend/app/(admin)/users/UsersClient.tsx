@@ -216,183 +216,187 @@ export default function UsersClient({ initialUsers }: { initialUsers: User[] }) 
 
       {/* ── Create Form ── */}
       {isCreateOpen && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Nuevo usuario</h3>
-            <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateErrors({}); }}>
-              Cancelar
-            </button>
-          </div>
-          <form onSubmit={handleCreate} className="page-stack" style={{ gap: 16 }}>
-            <div className="form-grid">
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nombre</label>
-                <input
-                  className="input"
-                  placeholder="Nombre"
-                  value={createForm.firstName}
-                  onChange={e => {
-                    updateCreateField("firstName", e.target.value);
-                    if (createErrors.firstName) setCreateErrors(prev => ({ ...prev, firstName: undefined }));
-                  }}
-                  required
-                />
-                {createErrors.firstName && <span style={{ fontSize: 12, color: "var(--danger)" }}>{createErrors.firstName}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Apellido</label>
-                <input
-                  className="input"
-                  placeholder="Apellido"
-                  value={createForm.lastName}
-                  onChange={e => {
-                    updateCreateField("lastName", e.target.value);
-                    if (createErrors.lastName) setCreateErrors(prev => ({ ...prev, lastName: undefined }));
-                  }}
-                  required
-                />
-                {createErrors.lastName && <span style={{ fontSize: 12, color: "var(--danger)" }}>{createErrors.lastName}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Email</label>
-                <input
-                  className="input"
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  value={createForm.email}
-                  onChange={e => {
-                    updateCreateField("email", e.target.value);
-                    if (createErrors.email) setCreateErrors(prev => ({ ...prev, email: undefined }));
-                  }}
-                  required
-                />
-                {createErrors.email && <span style={{ fontSize: 12, color: "var(--danger)" }}>{createErrors.email}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Contraseña</label>
-                <input
-                  className="input"
-                  type="password"
-                  placeholder="Mínimo 6 caracteres"
-                  value={createForm.password}
-                  onChange={e => {
-                    updateCreateField("password", e.target.value);
-                    if (createErrors.password) setCreateErrors(prev => ({ ...prev, password: undefined }));
-                  }}
-                  required
-                />
-                {createErrors.password && <span style={{ fontSize: 12, color: "var(--danger)" }}>{createErrors.password}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Rol</label>
-                <select className="select" value={createForm.role} onChange={e => updateCreateField("role", e.target.value as UserRole)} required>
-                  {ROLES.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Negocio Asociado (Opcional)</label>
-                <select className="select" value={createForm.businessId} onChange={e => updateCreateField("businessId", e.target.value)}>
-                  <option value="">Ninguno / Sin negocio</option>
-                  {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-            </div>
-            {errorMessage && <p className="message-error">{errorMessage}</p>}
-            <div>
-              <button className="primary-btn" type="submit" disabled={loadingCreate}>
-                {loadingCreate ? "Creando..." : "Crear usuario"}
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setIsCreateOpen(false); setCreateErrors({}); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Nuevo usuario</h3>
+              <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateErrors({}); }}>
+                Cancelar
               </button>
             </div>
-          </form>
-        </section>
+            <form onSubmit={handleCreate} className="page-stack" style={{ gap: 16 }}>
+              <div className="form-grid">
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nombre</label>
+                  <input
+                    className="input"
+                    placeholder="Nombre"
+                    value={createForm.firstName}
+                    onChange={e => {
+                      updateCreateField("firstName", e.target.value);
+                      if (createErrors.firstName) setCreateErrors(prev => ({ ...prev, firstName: undefined }));
+                    }}
+                    required
+                  />
+                  {createErrors.firstName && <span style={{ fontSize: 12, color: "var(--danger)" }}>{createErrors.firstName}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Apellido</label>
+                  <input
+                    className="input"
+                    placeholder="Apellido"
+                    value={createForm.lastName}
+                    onChange={e => {
+                      updateCreateField("lastName", e.target.value);
+                      if (createErrors.lastName) setCreateErrors(prev => ({ ...prev, lastName: undefined }));
+                    }}
+                    required
+                  />
+                  {createErrors.lastName && <span style={{ fontSize: 12, color: "var(--danger)" }}>{createErrors.lastName}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Email</label>
+                  <input
+                    className="input"
+                    type="email"
+                    placeholder="correo@ejemplo.com"
+                    value={createForm.email}
+                    onChange={e => {
+                      updateCreateField("email", e.target.value);
+                      if (createErrors.email) setCreateErrors(prev => ({ ...prev, email: undefined }));
+                    }}
+                    required
+                  />
+                  {createErrors.email && <span style={{ fontSize: 12, color: "var(--danger)" }}>{createErrors.email}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Contraseña</label>
+                  <input
+                    className="input"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={createForm.password}
+                    onChange={e => {
+                      updateCreateField("password", e.target.value);
+                      if (createErrors.password) setCreateErrors(prev => ({ ...prev, password: undefined }));
+                    }}
+                    required
+                  />
+                  {createErrors.password && <span style={{ fontSize: 12, color: "var(--danger)" }}>{createErrors.password}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Rol</label>
+                  <select className="select" value={createForm.role} onChange={e => updateCreateField("role", e.target.value as UserRole)} required>
+                    {ROLES.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Negocio Asociado (Opcional)</label>
+                  <select className="select" value={createForm.businessId} onChange={e => updateCreateField("businessId", e.target.value)}>
+                    <option value="">Ninguno / Sin negocio</option>
+                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              {errorMessage && <p className="message-error">{errorMessage}</p>}
+              <div>
+                <button className="primary-btn" type="submit" disabled={loadingCreate}>
+                  {loadingCreate ? "Creando..." : "Crear usuario"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* ── Edit Form ── */}
       {editingId !== null && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Editar usuario #{editingId}</h3>
-            <button className="secondary-btn" onClick={() => { setEditingId(null); setEditErrors({}); }}>
-              Cancelar
-            </button>
-          </div>
-          <form onSubmit={handleEdit} className="page-stack" style={{ gap: 16 }}>
-            <div className="form-grid">
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nombre</label>
-                <input
-                  className="input"
-                  placeholder="Nombre"
-                  value={editForm.firstName}
-                  onChange={e => {
-                    updateEditField("firstName", e.target.value);
-                    if (editErrors.firstName) setEditErrors(prev => ({ ...prev, firstName: undefined }));
-                  }}
-                  required
-                />
-                {editErrors.firstName && <span style={{ fontSize: 12, color: "var(--danger)" }}>{editErrors.firstName}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Apellido</label>
-                <input
-                  className="input"
-                  placeholder="Apellido"
-                  value={editForm.lastName}
-                  onChange={e => {
-                    updateEditField("lastName", e.target.value);
-                    if (editErrors.lastName) setEditErrors(prev => ({ ...prev, lastName: undefined }));
-                  }}
-                  required
-                />
-                {editErrors.lastName && <span style={{ fontSize: 12, color: "var(--danger)" }}>{editErrors.lastName}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Email</label>
-                <input
-                  className="input"
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  value={editForm.email}
-                  onChange={e => {
-                    updateEditField("email", e.target.value);
-                    if (editErrors.email) setEditErrors(prev => ({ ...prev, email: undefined }));
-                  }}
-                  required
-                />
-                {editErrors.email && <span style={{ fontSize: 12, color: "var(--danger)" }}>{editErrors.email}</span>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nueva Contraseña (Opcional)</label>
-                <input
-                  className="input"
-                  type="password"
-                  placeholder="Dejar vacío para no cambiar"
-                  value={editForm.password}
-                  onChange={e => updateEditField("password", e.target.value)}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Rol</label>
-                <select className="select" value={editForm.role} onChange={e => updateEditField("role", e.target.value as UserRole)} required>
-                  {ROLES.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Negocio Asociado (Opcional)</label>
-                <select className="select" value={editForm.businessId} onChange={e => updateEditField("businessId", e.target.value)}>
-                  <option value="">Ninguno / Sin negocio</option>
-                  {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-            </div>
-            {errorMessage && <p className="message-error">{errorMessage}</p>}
-            <div>
-              <button className="primary-btn" type="submit" disabled={loadingEdit}>
-                {loadingEdit ? "Guardando..." : "Guardar cambios"}
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setEditingId(null); setEditErrors({}); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Editar usuario #{editingId}</h3>
+              <button className="secondary-btn" onClick={() => { setEditingId(null); setEditErrors({}); }}>
+                Cancelar
               </button>
             </div>
-          </form>
-        </section>
+            <form onSubmit={handleEdit} className="page-stack" style={{ gap: 16 }}>
+              <div className="form-grid">
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nombre</label>
+                  <input
+                    className="input"
+                    placeholder="Nombre"
+                    value={editForm.firstName}
+                    onChange={e => {
+                      updateEditField("firstName", e.target.value);
+                      if (editErrors.firstName) setEditErrors(prev => ({ ...prev, firstName: undefined }));
+                    }}
+                    required
+                  />
+                  {editErrors.firstName && <span style={{ fontSize: 12, color: "var(--danger)" }}>{editErrors.firstName}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Apellido</label>
+                  <input
+                    className="input"
+                    placeholder="Apellido"
+                    value={editForm.lastName}
+                    onChange={e => {
+                      updateEditField("lastName", e.target.value);
+                      if (editErrors.lastName) setEditErrors(prev => ({ ...prev, lastName: undefined }));
+                    }}
+                    required
+                  />
+                  {editErrors.lastName && <span style={{ fontSize: 12, color: "var(--danger)" }}>{editErrors.lastName}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Email</label>
+                  <input
+                    className="input"
+                    type="email"
+                    placeholder="correo@ejemplo.com"
+                    value={editForm.email}
+                    onChange={e => {
+                      updateEditField("email", e.target.value);
+                      if (editErrors.email) setEditErrors(prev => ({ ...prev, email: undefined }));
+                    }}
+                    required
+                  />
+                  {editErrors.email && <span style={{ fontSize: 12, color: "var(--danger)" }}>{editErrors.email}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Nueva Contraseña (Opcional)</label>
+                  <input
+                    className="input"
+                    type="password"
+                    placeholder="Dejar vacío para no cambiar"
+                    value={editForm.password}
+                    onChange={e => updateEditField("password", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Rol</label>
+                  <select className="select" value={editForm.role} onChange={e => updateEditField("role", e.target.value as UserRole)} required>
+                    {ROLES.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>Negocio Asociado (Opcional)</label>
+                  <select className="select" value={editForm.businessId} onChange={e => updateEditField("businessId", e.target.value)}>
+                    <option value="">Ninguno / Sin negocio</option>
+                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              {errorMessage && <p className="message-error">{errorMessage}</p>}
+              <div>
+                <button className="primary-btn" type="submit" disabled={loadingEdit}>
+                  {loadingEdit ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* ── Delete Modal ── */}

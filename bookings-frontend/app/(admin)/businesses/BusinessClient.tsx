@@ -246,101 +246,105 @@ export default function BusinessClient({ initialBusinesses }: { initialBusinesse
 
       {/* ── Create form ── */}
       {isCreateOpen && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Nuevo negocio</h3>
-            <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateName(""); setCreateNameError(""); setCreateAddress(""); setCreatePhone(""); }}>
-              Cancelar
-            </button>
-          </div>
-          <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <NameInput value={createName} onChange={handleCreateNameChange} error={createNameError} />
-            
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
-                <label style={{ fontSize: 12, color: "var(--muted)" }}>Dirección (Opcional)</label>
-                <input
-                  className="input"
-                  placeholder="Dirección del negocio"
-                  value={createAddress}
-                  onChange={e => setCreateAddress(e.target.value)}
-                />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
-                <label style={{ fontSize: 12, color: "var(--muted)" }}>Teléfono (Opcional)</label>
-                <input
-                  className="input"
-                  placeholder="Teléfono del negocio"
-                  value={createPhone}
-                  onChange={e => setCreatePhone(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {errorMessage && <p className="message-error">{errorMessage}</p>}
-            <div>
-              <button
-                className="primary-btn"
-                type="submit"
-                disabled={loadingCreate || !!createNameError || createName.trim().length < NAME_MIN}
-              >
-                {loadingCreate ? "Guardando..." : "Crear negocio"}
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setIsCreateOpen(false); setCreateName(""); setCreateNameError(""); setCreateAddress(""); setCreatePhone(""); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Nuevo negocio</h3>
+              <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateName(""); setCreateNameError(""); setCreateAddress(""); setCreatePhone(""); }}>
+                Cancelar
               </button>
             </div>
-          </form>
-        </section>
+            <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <NameInput value={createName} onChange={handleCreateNameChange} error={createNameError} />
+              
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
+                  <label style={{ fontSize: 12, color: "var(--muted)" }}>Dirección (Opcional)</label>
+                  <input
+                    className="input"
+                    placeholder="Dirección del negocio"
+                    value={createAddress}
+                    onChange={e => setCreateAddress(e.target.value)}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
+                  <label style={{ fontSize: 12, color: "var(--muted)" }}>Teléfono (Opcional)</label>
+                  <input
+                    className="input"
+                    placeholder="Teléfono del negocio"
+                    value={createPhone}
+                    onChange={e => setCreatePhone(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {errorMessage && <p className="message-error">{errorMessage}</p>}
+              <div>
+                <button
+                  className="primary-btn"
+                  type="submit"
+                  disabled={loadingCreate || !!createNameError || createName.trim().length < NAME_MIN}
+                >
+                  {loadingCreate ? "Guardando..." : "Crear negocio"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* ── Edit form ── */}
       {editingId !== null && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Editar negocio #{editingId}</h3>
-            <button className="secondary-btn" onClick={() => { setEditingId(null); setEditName(""); setEditNameError(""); setEditAddress(""); setEditPhone(""); }}>
-              Cancelar
-            </button>
-          </div>
-          <form onSubmit={handleEdit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <NameInput
-              value={editName}
-              onChange={handleEditNameChange}
-              error={editNameError}
-              disabled={currentUser?.role === "manager"}
-            />
-            
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
-                <label style={{ fontSize: 12, color: "var(--muted)" }}>Dirección (Opcional)</label>
-                <input
-                  className="input"
-                  placeholder="Dirección del negocio"
-                  value={editAddress}
-                  onChange={e => setEditAddress(e.target.value)}
-                />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
-                <label style={{ fontSize: 12, color: "var(--muted)" }}>Teléfono (Opcional)</label>
-                <input
-                  className="input"
-                  placeholder="Teléfono del negocio"
-                  value={editPhone}
-                  onChange={e => setEditPhone(e.target.value)}
-                />
-              </div>
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setEditingId(null); setEditName(""); setEditNameError(""); setEditAddress(""); setEditPhone(""); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Editar negocio #{editingId}</h3>
+              <button className="secondary-btn" onClick={() => { setEditingId(null); setEditName(""); setEditNameError(""); setEditAddress(""); setEditPhone(""); }}>
+                Cancelar
+              </button>
             </div>
+            <form onSubmit={handleEdit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <NameInput
+                value={editName}
+                onChange={handleEditNameChange}
+                error={editNameError}
+                disabled={currentUser?.role === "manager"}
+              />
+              
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
+                  <label style={{ fontSize: 12, color: "var(--muted)" }}>Dirección (Opcional)</label>
+                  <input
+                    className="input"
+                    placeholder="Dirección del negocio"
+                    value={editAddress}
+                    onChange={e => setEditAddress(e.target.value)}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
+                  <label style={{ fontSize: 12, color: "var(--muted)" }}>Teléfono (Opcional)</label>
+                  <input
+                    className="input"
+                    placeholder="Teléfono del negocio"
+                    value={editPhone}
+                    onChange={e => setEditPhone(e.target.value)}
+                  />
+                </div>
+              </div>
 
-            {errorMessage && <p className="message-error">{errorMessage}</p>}
-            <div>
-              <button
-                className="primary-btn"
-                type="submit"
-                disabled={loadingEdit || (currentUser?.role !== "manager" && (!!editNameError || editName.trim().length < NAME_MIN))}
-              >
+              {errorMessage && <p className="message-error">{errorMessage}</p>}
+              <div>
+                <button
+                  className="primary-btn"
+                  type="submit"
+                  disabled={loadingEdit || (currentUser?.role !== "manager" && (!!editNameError || editName.trim().length < NAME_MIN))}
+                >
                 {loadingEdit ? "Guardando..." : "Guardar cambios"}
               </button>
             </div>
           </form>
-        </section>
+          </section>
+        </div>
       )}
 
       {/* ── Delete modal ── */}

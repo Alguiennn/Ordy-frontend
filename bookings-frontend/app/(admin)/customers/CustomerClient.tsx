@@ -168,40 +168,44 @@ export default function CustomersClient({ initialCustomers }: { initialCustomers
 
       {/* ── Create form ── */}
       {isCreateOpen && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Nuevo cliente</h3>
-            <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateForm(emptyForm); }}>Cancelar</button>
-          </div>
-          <form onSubmit={handleCreateSubmit} className="page-stack" style={{ gap: 16 }}>
-            <FormFields form={createForm} update={(k, v) => setCreateForm(prev => ({ ...prev, [k]: v }))} businesses={businesses} />
-            {errorMessage && <div className="message-error">{errorMessage}</div>}
-            <div className="message-row">
-              <button className="primary-btn" type="submit" disabled={loadingCreate}>
-                {loadingCreate ? "Guardando..." : "Crear cliente"}
-              </button>
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setIsCreateOpen(false); setCreateForm(emptyForm); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Nuevo cliente</h3>
+              <button className="secondary-btn" onClick={() => { setIsCreateOpen(false); setCreateForm(emptyForm); }}>Cancelar</button>
             </div>
-          </form>
-        </section>
+            <form onSubmit={handleCreateSubmit} className="page-stack" style={{ gap: 16 }}>
+              <FormFields form={createForm} update={(k, v) => setCreateForm(prev => ({ ...prev, [k]: v }))} businesses={businesses} />
+              {errorMessage && <div className="message-error">{errorMessage}</div>}
+              <div className="message-row">
+                <button className="primary-btn" type="submit" disabled={loadingCreate}>
+                  {loadingCreate ? "Guardando..." : "Crear cliente"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* ── Edit form ── */}
       {editingId !== null && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Editar cliente #{editingId}</h3>
-            <button className="secondary-btn" onClick={() => { setEditingId(null); setEditForm(emptyForm); }}>Cancelar</button>
-          </div>
-          <form onSubmit={handleEditSubmit} className="page-stack" style={{ gap: 16 }}>
-            <FormFields form={editForm} update={(k, v) => setEditForm(prev => ({ ...prev, [k]: v }))} businesses={businesses} />
-            {errorMessage && <div className="message-error">{errorMessage}</div>}
-            <div className="message-row">
-              <button className="primary-btn" type="submit" disabled={loadingEdit}>
-                {loadingEdit ? "Guardando..." : "Guardar cambios"}
-              </button>
+        <div className="form-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) { setEditingId(null); setEditForm(emptyForm); } }}>
+          <section className="form-modal-card">
+            <div className="panel-title-row">
+              <h3 className="panel-title">Editar cliente #{editingId}</h3>
+              <button className="secondary-btn" onClick={() => { setEditingId(null); setEditForm(emptyForm); }}>Cancelar</button>
             </div>
-          </form>
-        </section>
+            <form onSubmit={handleEditSubmit} className="page-stack" style={{ gap: 16 }}>
+              <FormFields form={editForm} update={(k, v) => setEditForm(prev => ({ ...prev, [k]: v }))} businesses={businesses} />
+              {errorMessage && <div className="message-error">{errorMessage}</div>}
+              <div className="message-row">
+                <button className="primary-btn" type="submit" disabled={loadingEdit}>
+                  {loadingEdit ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {/* ── Delete modal ── */}
